@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpaceFit AI MVP</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {}
+          }
+        }
+      }
+    </script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      body { margin: 0; padding: 0; }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155; 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #475569; 
+      }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans">
+    <div id="root"></div>
+    <script type="text/babel">
+const { useState, useRef, useEffect } = React;
+
+// 가구 표준 규격 프리셋 데이터 정의
+const FURNITURE_CATEGORIES = {
+  bed: {
+    label: '🛏️ 침대 / 매트리스',
+    presets: [
+      { name: '싱글 침대 (S)', width: 100, height: 200, label: '100 x 200 cm', color: 'from-blue-400 to-indigo-500' },
+      { name: '퀸 침대 (Q)', width: 150, height: 200, label: '150 x 200 cm', color: 'from-blue-500 to-indigo-600', recommended: true },
+      { name: '킹 침대 (K)', width: 160, height: 200, label: '160 x 200 cm', color: 'from-blue-600 to-indigo-700' },
+    ]
+  },
+  drawer: {
+    label: '🗄️ 서랍장 / 수납',
+    presets: [
+      { name: '3단 서랍장', width: 80, height: 50, label: '가로 80 x 깊이 50 cm', color: 'from-amber-400 to-orange-500' },
+      { name: '5단 서랍장', width: 100, height: 50, label: '가로 100 x 깊이 50 cm', color: 'from-amber-500 to-orange-600', recommended: true },
+    ]
+  },
+  desk: {
+    label: '✍️ 책상 / 테이블',
+    presets: [
+      { name: '1200 규격 책상', width: 120, height: 60, label: '120 x 60 cm', color: 'from-emerald-400 to-teal-500' },
+      { name: '1400 규격 책상', width: 140, height: 70, label: '140 x 70 cm', color: 'from-emerald-500 to-teal-600', recommended: true },
+    ]
+  },
+  sofa: {
+    label: '🛋️ 거실 소파',
+    presets: [
+      { name: '2인용 컴팩트 소파', width: 140, height: 85, label: '140 x 85 cm', color: 'from-purple-400 to-pink-500' },
+      { name: '3인용 표준 소파', width: 180, height: 90, label: '180 x 90 cm', color: 'from-purple-500 to-pink-600' }
+    ]
+  }
+};
+
+// 프로토타입 즉시 테스트를 위한 고화질 방 사진 프리셋
+const PRESET_ROOMS = [
+  {
+    id: 'room-1',
+    name: '아늑한 원룸 오피스텔 (탑뷰)',
+    url: 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=1200&q=80',
+    desc: '수직 탑뷰에 가까워 모형 배치를 시각화하기 최적화된 방입니다.'
+  },
+  {
+    id: 'room-2',
+    name: '넓은 거실 공간',
+    url: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80',
+    desc: '소파나 거실장 배치를 눈대중으로 체감하기 좋은 공간입니다.'
+  },
+  {
+    id: 'room-3',
+    name: '미니멀 침실 빈 벽면',
+    url: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80',
+    desc: '침대 헤드 영역이나 책상을 매칭하기 좋은 단정한 구조입니다.'
+  }
+];
+
+// 커머스 제휴 모델 (B2C Affiliate) 시뮬레이션용 추천 상품 데이터
+const COMMERCE_MOCK_DATA = {
+  bed: [
+    { brand: '지누스', name: '스마트베이스 침대 프레임', price: '129,000원', img: 'https://images.unsplash.com/photo-1505693314120-0d443867891c?auto=format&fit=crop&w=150&q=80', badge: '오늘출발' },
+    { brand: '동서가구', name: '원목 평상형 침대', price: '198,000원', img: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=150&q=80', badge: '베스트' },
+  ],
+  drawer: [
+    { brand: '샘솟는가구', name: '미니멀 와이드 서랍장', price: '89,000원', img: 'https://images.unsplash.com/photo-1595515106969-1ce29566ff1c?auto=format&fit=crop&w=150&q=80', badge: '무료배송' },
+  ],
+  desk: [
+    { brand: '데스커', name: '베이직 데스크 세트', price: '145,000원', img: 'https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&w=150&q=80', badge: '국민템' },
+  ],
+  sofa: [
+    { brand: '에싸', name: '패브릭 3인용 모듈 소파', price: '650,000원', img: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=150&q=80', badge: '특가' },
+  ],
+  unknown: [
+    { brand: '스페이스핏', name: '공간 맞춤 인기상품 모아보기', price: '할인중', img: 'https://images.unsplash.com/photo-1583847268964-b28ce8f89f86?auto=format&fit=crop&w=150&q=80', badge: '추천' },
+  ]
+};
+
+function App() {
+  // 앱 전체 단계 상태 관리 (scanning: 스캔 체험 단계, workspace: 실제 배치 작업실)
+  const [appStage, setAppStage] = useState('scanning'); 
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanStatusText, setScanStatusText] = useState('바닥 평면 감지 센서 초기화 중...');
+
+  // 가상 스토어 뷰 상태 추가
+  const [showStoreModal, setShowStoreModal] = useState(false);
+
+  // 방 스케일 관련 상태 (추가)
+  const [roomPyeong, setRoomPyeong] = useState(5);
+  const [pixelsPerCm, setPixelsPerCm] = useState(1);
+
+  // 캔버스 배경 및 가구 관리 상태
+  const [bgImage, setBgImage] = useState(PRESET_ROOMS[0].url);
+  const [furnitureList, setFurnitureList] = useState([
+    {
+      id: 'initial-bed',
+      name: '퀸 침대 (Q)',
+      type: 'bed',
+      realWidth: 150, // 실제 기준 폭 cm
+      realHeight: 200, // 실제 기준 높이 cm
+      x: 100, // 좌측 위치
+      y: 120, // 상측 위치
+      rotation: 0, // 회전각
+      color: 'from-blue-500 to-indigo-600',
+      opacity: 0.85,
+      scaleX: 1, // 리사이즈 배율
+      scaleY: 1
+    }
+  ]);
+  const [selectedId, setSelectedId] = useState('initial-bed');
+  const [showGrid, setShowGrid] = useState(true);
+  const [customFileLoading, setCustomFileLoading] = useState(false);
+
+  // 드래그/회전/리사이즈 상호작용 관련 로컬 Ref (React state 변경 빈도로 인한 성능 저하 방지)
+  const canvasRef = useRef(null);
+  const interactionRef = useRef({
+    isInteracting: false,
+    mode: null, // 'move', 'resize', 'rotate'
+    targetId: null,
+    startX: 0,
+    startY: 0,
+    startItemX: 0,
+    startItemY: 0,
+    startRealWidth: 0,
+    startRealHeight: 0,
+    startRotation: 0,
+    startPixelsPerCm: 1,
+  });
+
+  // ⚡ URL Query Trigger Parser for RoomQuest AI Integration
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const trigger = params.get('trigger');
+    
+    if (trigger) {
+      setAppStage('workspace'); // Bypass scanning MVP and load workspace instantly!
+      
+      if (trigger === 'book') {
+        const newFurniture = {
+          id: 'trigger-bookshelf',
+          name: '데스커 3단 책꽂이 (추천)',
+          type: 'drawer',
+          realWidth: 120,
+          realHeight: 40,
+          x: 150,
+          y: 200,
+          rotation: 0,
+          color: 'from-emerald-500 to-teal-600',
+          opacity: 0.9,
+          scaleX: 1,
+          scaleY: 1
+        };
+        setFurnitureList([newFurniture]);
+        setSelectedId('trigger-bookshelf');
+      } else if (trigger === 'backpack') {
+        const newFurniture = {
+          id: 'trigger-hanger',
+          name: '한샘 원목 A형 행거 (추천)',
+          type: 'drawer',
+          realWidth: 80,
+          realHeight: 50,
+          x: 180,
+          y: 180,
+          rotation: 0,
+          color: 'from-amber-500 to-orange-600',
+          opacity: 0.9,
+          scaleX: 1,
+          scaleY: 1
+        };
+        setFurnitureList([newFurniture]);
+        setSelectedId('trigger-hanger');
+      } else if (trigger === 'cup' || trigger === 'bottle') {
+        const newFurniture = {
+          id: 'trigger-organizer',
+          name: '스마트 다용도 선반 (추천)',
+          type: 'drawer',
+          realWidth: 60,
+          realHeight: 40,
+          x: 200,
+          y: 150,
+          rotation: 0,
+          color: 'from-purple-500 to-pink-600',
+          opacity: 0.9,
+          scaleX: 1,
+          scaleY: 1
+        };
+        setFurnitureList([newFurniture]);
+        setSelectedId('trigger-organizer');
+      }
+    }
+  }, []);
+
+  // 0. 캔버스 및 평수 기반 스케일(pixelsPerCm) 계산
+  useEffect(() => {
+    if (appStage !== 'workspace') return;
+    
+    const updateScale = () => {
+      if (!canvasRef.current) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      // 캔버스의 대략 60% 면적을 바닥(Floor)으로 간주
+      const floorAreaPx = rect.width * rect.height * 0.6;
+      // 1평 = 약 3.3m^2 = 33000 cm^2
+      const roomAreaCm2 = roomPyeong * 33000;
+      
+      const newScale = Math.sqrt(floorAreaPx / roomAreaCm2);
+      setPixelsPerCm(newScale);
+    };
+
+    // 약간의 지연을 주어 렌더링 후 DOM 크기를 정확히 가져오도록 함
+    setTimeout(updateScale, 50);
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, [roomPyeong, appStage]);
+
+  // 1. 가상 스캔 시뮬레이터 효과 구현
+  useEffect(() => {
+    if (appStage !== 'scanning') return;
+
+    const timer = setInterval(() => {
+      setScanProgress((prev) => {
+        const next = prev + 1;
+        
+        // 진행 단계별 가이드 텍스트 변경 (플레이스보 효과 극대화)
+        if (next === 20) setScanStatusText('바닥 자이로 센서 연동 성공. 카메라 바닥 스캔 중...');
+        if (next === 45) setScanStatusText('공간 격자망 측정 포인트 수집 중 (402/1000)...');
+        if (next === 70) setScanStatusText('방 조도 확인 및 3D 수평 원근 기준선 앵커 고정 완료!');
+        if (next === 90) setScanStatusText('배치 공간 매칭 연산 완료! 가상 스티커 시스템을 구축합니다.');
+
+        if (next >= 100) {
+          clearInterval(timer);
+          setTimeout(() => {
+            setAppStage('workspace');
+          }, 800);
+          return 100;
+        }
+        return next;
+      });
+    }, 40); // 약 4초 동안 스캔 시뮬레이션
+
+    return () => clearInterval(timer);
+  }, [appStage]);
+
+  // 마우스/터치 통합 포인터 이벤트 핸들러 구현 (반응형 모바일 지원 극대화)
+  const handlePointerDown = (e, item, mode) => {
+    e.stopPropagation();
+    // 마우스 우클릭 등 방지 및 포인터 캡처
+    if (e.button && e.button !== 0) return;
+    
+    setSelectedId(item.id);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const canvasRect = canvas.getBoundingClientRect();
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+    interactionRef.current = {
+      isInteracting: true,
+      mode: mode, // 'move' | 'resize' | 'rotate'
+      targetId: item.id,
+      startX: clientX,
+      startY: clientY,
+      startItemX: item.x,
+      startItemY: item.y,
+      startRealWidth: item.realWidth,
+      startRealHeight: item.realHeight,
+      startRotation: item.rotation,
+      startPixelsPerCm: pixelsPerCm,
+    };
+
+    // 전역 이벤트 리스너 등록 (부드러운 이탈 드래깅 처리)
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+  };
+
+  const handlePointerMove = (e) => {
+    const interaction = interactionRef.current;
+    if (!interaction.isInteracting) return;
+
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+    const deltaX = clientX - interaction.startX;
+    const deltaY = clientY - interaction.startY;
+
+    setFurnitureList((prevList) =>
+      prevList.map((item) => {
+        if (item.id !== interaction.targetId) return item;
+
+        if (interaction.mode === 'move') {
+          // 범위 밖으로 튀지 않도록 마진 처리
+          return {
+            ...item,
+            x: Math.max(-50, Math.min(600, interaction.startItemX + deltaX)),
+            y: Math.max(-50, Math.min(600, interaction.startItemY + deltaY)),
+          };
+        } else if (interaction.mode === 'resize') {
+          // 크기 조절 (최소 가로세로 30px 제한)
+          const startPxWidth = interaction.startRealWidth * interaction.startPixelsPerCm;
+          const startPxHeight = interaction.startRealHeight * interaction.startPixelsPerCm;
+          
+          const newPxWidth = Math.max(30, startPxWidth + deltaX);
+          const newPxHeight = Math.max(30, startPxHeight + deltaY);
+
+          return {
+            ...item,
+            realWidth: newPxWidth / pixelsPerCm,
+            realHeight: newPxHeight / pixelsPerCm,
+          };
+        } else if (interaction.mode === 'rotate') {
+          // 회전 중심점 계산 및 삼각함수 아크탄젠트 활용한 회전 제어
+          const element = document.getElementById(item.id);
+          if (!element) return item;
+          const rect = element.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          
+          const angleRad = Math.atan2(clientY - centerY, clientX - centerX);
+          let angleDeg = angleRad * (180 / Math.PI) - 90; // 상단 꼭대기 기준 오프셋 90도 보정
+          if (angleDeg < 0) angleDeg += 360;
+
+          return {
+            ...item,
+            rotation: Math.round(angleDeg),
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  const handlePointerUp = () => {
+    interactionRef.current.isInteracting = false;
+    document.removeEventListener('pointermove', handlePointerMove);
+    document.removeEventListener('pointerup', handlePointerUp);
+  };
+
+  // 새로운 가구를 화면 중앙에 생성하는 함수
+  const addNewFurniture = (preset) => {
+    const newId = `furn-${Date.now()}`;
+    const newItem = {
+      id: newId,
+      name: preset.name,
+      type: preset.type || 'unknown',
+      realWidth: preset.width,
+      realHeight: preset.height,
+      x: 120 + Math.random() * 20, // 겹치지 않게 무작위 가산 오프셋
+      y: 120 + Math.random() * 20,
+      rotation: 0,
+      color: preset.color || 'from-slate-400 to-slate-600',
+      opacity: 0.85,
+    };
+    setFurnitureList((prev) => [...prev, newItem]);
+    setSelectedId(newId);
+  };
+
+  // 배경 이미지 처리
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setCustomFileLoading(true);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setBgImage(event.target.result);
+        setCustomFileLoading(false);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // 선택된 항목 삭제
+  const deleteSelected = () => {
+    setFurnitureList((prev) => prev.filter((item) => item.id !== selectedId));
+    setSelectedId(null);
+  };
+
+  // 불투명도 조절
+  const updateOpacity = (val) => {
+    setFurnitureList((prev) =>
+      prev.map((item) => (item.id === selectedId ? { ...item, opacity: parseFloat(val) } : item))
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col selection:bg-indigo-500 selection:text-white">
+      
+      {/* 글로벌 네비게이션 헤더 */}
+      <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md px-6 py-4 sticky top-0 z-50 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <span className="text-xl font-bold text-white">S</span>
+          </div>
+          <div>
+            <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+              스페이스핏 AI <span className="text-xs text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-500/20 ml-2 font-normal">MVP 5일 완성</span>
+            </h1>
+            <p className="text-xs text-slate-400 hidden sm:block">AI인 척 똑똑하게 속도를 당기는 극강의 편의성 프로토타입</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => {
+              setAppStage('scanning');
+              setScanProgress(0);
+            }}
+            className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-3 py-2 rounded-lg transition"
+          >
+            🔄 다시 스캔 체험하기
+          </button>
+          <a
+            href="https://placehold.co"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-indigo-400 hover:underline hidden md:block"
+          >
+            Guide v1.2
+          </a>
+        </div>
+      </header>
+
+      {/* 가상 스캔 시뮬레이션 화면 (체험 연출 ②번 기획) */}
+      {appStage === 'scanning' && (
+        <div className="flex-1 flex flex-col items-center justify-center p-6 bg-radial-gradient from-slate-950 to-slate-900 relative overflow-hidden">
+          {/* 하이테크 레이아웃 데코 그리드 */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)] opacity-30" />
+          
+          <div className="max-w-md w-full bg-slate-950/90 border border-slate-800 rounded-2xl p-8 shadow-2xl relative z-10 text-center space-y-8">
+            <div className="space-y-2">
+              <span className="text-xs text-emerald-400 font-bold tracking-widest uppercase bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                Spatial Scan Mock AI
+              </span>
+              <h2 className="text-2xl font-bold mt-2">공간 앵커 매핑 활성화</h2>
+              <p className="text-sm text-slate-400">
+                스마트폰의 정밀 관성 측정 장치(IMU)와 카메라 원근법을 매칭하여 방 규격을 수립하고 있습니다.
+              </p>
+            </div>
+
+            {/* 고품질 레이저 스캔 애니메이션 시각화 */}
+            <div className="w-full aspect-video rounded-xl bg-slate-900 border border-indigo-500/30 relative flex items-center justify-center overflow-hidden shadow-inner">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent animate-bounce opacity-80" style={{ animationDuration: '2.5s' }} />
+              <div className="absolute inset-0 bg-radial-gradient from-indigo-500/10 to-transparent animate-pulse" />
+              
+              {/* 타겟 HUD 과녁 */}
+              <div className="relative w-28 h-28 border border-dashed border-slate-700 rounded-full flex items-center justify-center animate-[spin_12s_linear_infinite]">
+                <div className="w-20 h-20 border border-indigo-500/40 rounded-full flex items-center justify-center">
+                  <div className="w-10 h-10 border-2 border-emerald-500/40 rounded-full" />
+                </div>
+                {/* 십자 가이드 */}
+                <div className="absolute top-0 bottom-0 left-1/2 w-[1px] bg-slate-700/60" />
+                <div className="absolute left-0 right-0 top-1/2 h-[1px] bg-slate-700/60" />
+              </div>
+              
+              {/* 스캔 완료 센서 포인트들 */}
+              <div className="absolute top-1/4 left-1/4 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+              <div className="absolute bottom-1/3 right-1/4 w-1.5 h-1.5 bg-indigo-400 rounded-full animate-ping delay-500" />
+              <div className="absolute top-1/3 right-1/3 w-1.5 h-1.5 bg-purple-400 rounded-full animate-ping delay-1000" />
+
+              <span className="absolute bottom-3 text-[10px] text-slate-500 font-mono tracking-widest">
+                SYSTEM CORRELATION RATE: 98.42%
+              </span>
+            </div>
+
+            {/* 프로그래스 로딩 상태 */}
+            <div className="space-y-3">
+              <div className="flex justify-between text-xs text-slate-400 font-mono">
+                <span>{scanStatusText}</span>
+                <span className="text-indigo-400 font-bold">{scanProgress}%</span>
+              </div>
+              <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 transition-all duration-300 ease-out"
+                  style={{ width: `${scanProgress}%` }}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={() => setAppStage('workspace')}
+              className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold text-sm rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+            >
+              🚀 스캔 건너뛰고 바로 시작하기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 실제 가구 매칭 메인 워크스페이스 */}
+      {appStage === 'workspace' && (
+        <main className="flex-1 flex flex-col lg:flex-row min-h-0">
+          
+          {/* Left Panel: 가구 규격 선택지 & 조작 인터페이스 (①번 기획 반영) */}
+          <section className="w-full lg:w-[380px] border-r border-slate-800 bg-slate-950 flex flex-col max-h-full overflow-y-auto">
+            
+            {/* 1단계: 공간 배경 설정 */}
+            <div className="p-5 border-b border-slate-800 space-y-3">
+              <h3 className="text-sm font-semibold text-indigo-400 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full" />
+                1. 사진 및 스캔 공간 설정
+              </h3>
+              <p className="text-xs text-slate-400">스무스한 배치를 테스트해 볼 룸 스페이스를 골라보세요.</p>
+              
+              {/* 이미지 프리셋 선택기 */}
+              <div className="grid grid-cols-3 gap-2 mt-2">
+                {PRESET_ROOMS.map((room) => (
+                  <button
+                    key={room.id}
+                    onClick={() => setBgImage(room.url)}
+                    className={`relative rounded-lg overflow-hidden border-2 aspect-video transition ${
+                      bgImage === room.url ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={room.url} alt={room.name} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 flex items-end p-1">
+                      <span className="text-[9px] truncate text-slate-200 w-full text-left">{room.name.split(' ')[0]}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* 사용자 가구 실사진 업로드 기능 */}
+              <div className="pt-2">
+                <label className="block w-full py-2 px-3 border border-dashed border-slate-700 hover:border-indigo-500 rounded-lg text-center cursor-pointer transition text-xs text-slate-300">
+                  {customFileLoading ? '📸 불러오는 중...' : '📷 우리집 방 사진 직접 올리기'}
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                </label>
+              </div>
+            </div>
+
+            {/* 1.5단계: 방 평수 설정 (새로 추가) */}
+            <div className="p-5 border-b border-slate-800 space-y-3">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-semibold text-indigo-400 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full" />
+                  우리집 방 크기 (평수)
+                </h3>
+                <span className="text-xs font-bold bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded">
+                  약 {roomPyeong} 평
+                </span>
+              </div>
+              <p className="text-xs text-slate-400">평수를 조절하면 AI가 방의 원근 비율을 추론하여 가구 크기를 자동 매칭합니다.</p>
+              <input
+                type="range"
+                min="2"
+                max="15"
+                step="1"
+                value={roomPyeong}
+                onChange={(e) => setRoomPyeong(Number(e.target.value))}
+                className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500 mt-2"
+              />
+              <div className="flex justify-between text-[10px] text-slate-500 font-mono px-1">
+                <span>2평 (원룸)</span>
+                <span>15평 (거실)</span>
+              </div>
+            </div>
+
+            {/* 2단계: 가구 원클릭 규격 추가 (핵심 ①번 기획 기능) */}
+            <div className="p-5 flex-1 space-y-5">
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-indigo-400 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full" />
+                  2. 클릭 한 번으로 규격 배치 (추천 ⭐)
+                </h3>
+                <p className="text-xs text-slate-400">직접 잴 필요 없도록 시중의 가전/가구 표준 규격을 반영했습니다.</p>
+              </div>
+
+              {Object.entries(FURNITURE_CATEGORIES).map(([catKey, category]) => (
+                <div key={catKey} className="space-y-2">
+                  <h4 className="text-xs font-bold text-slate-300 bg-slate-900/80 py-1.5 px-3 rounded border-l-2 border-slate-700">
+                    {category.label}
+                  </h4>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {category.presets.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => addNewFurniture({ ...preset, type: catKey })}
+                        className="w-full flex items-center justify-between text-left p-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/40 transition group"
+                      >
+                        <div className="space-y-0.5">
+                          <span className="text-xs font-semibold text-slate-200 group-hover:text-indigo-300 transition flex items-center gap-1.5">
+                            {preset.name}
+                            {preset.recommended && (
+                              <span className="text-[9px] bg-amber-500/20 text-amber-400 border border-amber-500/20 px-1 py-0.2 rounded font-normal">
+                                추천규격
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-[10px] text-slate-400 block font-mono">
+                            {preset.width}cm x {preset.height}cm
+                          </span>
+                        </div>
+                        <span className="text-xs bg-indigo-950 text-indigo-400 px-2 py-1 rounded border border-indigo-900 group-hover:bg-indigo-600 group-hover:text-white transition">
+                          추가 +
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 브랜딩 풋터 정보 */}
+            <div className="p-4 bg-slate-950/90 border-t border-slate-800 text-[11px] text-slate-500 space-y-1">
+              <p>📍 SpaceFit AI - 5-Day No-Code Concept Simulator</p>
+              <p>※ 해당 제품은 복잡한 하드웨어 설치 없이 99% 순수 UX적 요소로 고효율 고객전환을 이끄는 MVP 프로토타입입니다.</p>
+            </div>
+          </section>
+
+          {/* Center Area: 실시간 가상 스티커 캔버스 (②번 기획 반영) */}
+          <section className="flex-1 bg-slate-900 flex flex-col p-4 sm:p-6 overflow-hidden">
+            
+            {/* 탑바 컨트롤러 */}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div className="flex items-center space-x-2">
+                <span className="text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-lg">
+                  🎯 평수 자동 스케일 적용 중
+                </span>
+                <span className="text-[11px] text-slate-400 hidden sm:block">
+                  설정된 평수에 맞춰 가구 크기가 자동 변환됩니다.
+                </span>
+              </div>
+              <div className="flex items-center space-x-3 text-xs">
+                <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={showGrid}
+                    onChange={(e) => setShowGrid(e.target.checked)}
+                    className="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500 bg-slate-900"
+                  />
+                  공간 원근 보정 가이드망 보기
+                </label>
+              </div>
+            </div>
+
+            {/* 가상 배치 캔버스 메인 바디 */}
+            <div className="flex-1 bg-slate-950/80 rounded-2xl border border-slate-800 relative overflow-hidden flex items-center justify-center">
+              
+              {/* 스캔 가상 보정 원근 격자망 그리드 오버레이 */}
+              {showGrid && (
+                <div className="absolute inset-0 z-10 pointer-events-none opacity-20 bg-[radial-gradient(#6366f1_1px,transparent_1px)] bg-[size:16px_16px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,#000_60%,transparent_100%)]" />
+              )}
+              {showGrid && (
+                <div className="absolute inset-x-0 bottom-0 h-1/2 z-10 pointer-events-none opacity-30 bg-gradient-to-t from-indigo-500/10 to-transparent flex items-center justify-center">
+                  <div className="w-full max-w-lg border-b border-indigo-500/20 border-dashed transform rotate-[-4deg]" />
+                  <div className="absolute w-full max-w-md border-b border-indigo-500/10 border-dashed transform rotate-[6deg]" />
+                </div>
+              )}
+
+              {/* 캔버스 도화지 */}
+              <div
+                ref={canvasRef}
+                className="relative w-full h-full max-h-[680px] aspect-[4/3] bg-slate-900 shadow-2xl overflow-hidden rounded-xl flex items-center justify-center"
+                style={{
+                  backgroundImage: `url(${bgImage})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              >
+                {/* 캔버스 위에 방 배경 암전 오버레이 (배치된 가구를 돋보이게 가이드) */}
+                <div className="absolute inset-0 bg-slate-950/15 pointer-events-none" />
+
+                {/* 배치된 가구 스티커들 반복 렌더링 */}
+                {furnitureList.map((item) => {
+                  const isSelected = item.id === selectedId;
+                  const itemPxWidth = item.realWidth * pixelsPerCm;
+                  const itemPxHeight = item.realHeight * pixelsPerCm;
+                  
+                  return (
+                    <div
+                      key={item.id}
+                      id={item.id}
+                      onPointerDown={(e) => handlePointerDown(e, item, 'move')}
+                      style={{
+                        position: 'absolute',
+                        left: `${item.x}px`,
+                        top: `${item.y}px`,
+                        width: `${itemPxWidth}px`,
+                        height: `${itemPxHeight}px`,
+                        transform: `rotate(${item.rotation}deg)`,
+                        transformOrigin: 'center center',
+                        opacity: item.opacity,
+                        touchAction: 'none' // 터치 스크롤 캔슬 및 고정 드래그 강제
+                      }}
+                      className={`group rounded-lg border-2 select-none z-20 transition-shadow ${
+                        isSelected
+                          ? 'border-indigo-400 bg-gradient-to-tr shadow-2xl shadow-indigo-500/40 ring-2 ring-white/10'
+                          : 'border-slate-300 hover:border-white/50 bg-gradient-to-tr shadow-md'
+                      } ${item.color}`}
+                    >
+                      {/* 가구 내부 시각 요소 */}
+                      <div className="w-full h-full flex flex-col justify-between p-2 text-white relative">
+                        {/* 헤더: 이름과 삭제 단축버튼 */}
+                        <div className="flex items-start justify-between">
+                          <span className="text-[10px] font-bold tracking-tight bg-slate-950/60 px-1.5 py-0.5 rounded truncate max-w-[85%]">
+                            {item.name}
+                          </span>
+                          {isSelected && (
+                            <button
+                              onPointerDown={(e) => { e.stopPropagation(); deleteSelected(); }}
+                              className="w-4.5 h-4.5 bg-red-500 hover:bg-red-600 rounded flex items-center justify-center text-[10px] shadow"
+                              title="삭제"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+
+                        {/* 중앙 정렬 크기 표시 라벨 (눈대중 조절 체감 극대화) */}
+                        <div className="text-center my-auto">
+                          <p className="text-[11px] font-extrabold tracking-tight drop-shadow">
+                            {Math.round(item.realWidth)} x {Math.round(item.realHeight)}
+                          </p>
+                          <p className="text-[9px] text-white/80 font-mono drop-shadow">
+                            (AI 스케일 매칭)
+                          </p>
+                        </div>
+
+                        {/* 푸터: 회전각 표시 */}
+                        <div className="flex justify-between items-end text-[9px] text-white/70 font-mono">
+                          <span>{item.rotation}°</span>
+                          <span className="bg-emerald-500/80 px-1 rounded text-[8px] text-white font-sans">
+                            {((item.realWidth * item.realHeight) / 10000).toFixed(1)}m²
+                          </span>
+                        </div>
+
+                        {/* 조작 가이드 오버레이 (선택 시 상호작용 지표 노출) */}
+                        {isSelected && (
+                          <>
+                            {/* 상단 핀 회전 핸들 */}
+                            <div
+                              onPointerDown={(e) => handlePointerDown(e, item, 'rotate')}
+                              className="absolute -top-7 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-indigo-500 hover:bg-indigo-400 border border-white shadow flex items-center justify-center cursor-alias z-30 animate-pulse"
+                              title="드래그하여 회전"
+                            >
+                              <span className="text-[11px] text-white">🔄</span>
+                            </div>
+                            <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-0.5 h-1.5 bg-indigo-400" />
+
+                            {/* 우측 하단 크기 조절 리사이저 핸들 (기획 ②번) */}
+                            <div
+                              onPointerDown={(e) => handlePointerDown(e, item, 'resize')}
+                              className="absolute -bottom-1.5 -right-1.5 w-5.5 h-5.5 rounded-full bg-emerald-500 hover:bg-emerald-400 border-2 border-slate-900 shadow cursor-se-resize flex items-center justify-center z-30"
+                              title="드래그하여 크기 조절"
+                            >
+                              <span className="text-[9px] text-white">📐</span>
+                            </div>
+
+                            {/* 바운더리 점선 시각화 */}
+                            <div className="absolute inset-0 border border-dashed border-white/60 pointer-events-none rounded-lg" />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* 캔버스가 비어있을 때의 친절한 가이드 */}
+                {furnitureList.length === 0 && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-slate-950/80 backdrop-blur-sm z-10">
+                    <span className="text-4xl animate-bounce">👈</span>
+                    <h4 className="text-lg font-bold mt-4">방에 올릴 가구가 아직 없습니다!</h4>
+                    <p className="text-sm text-slate-400 mt-1 max-w-xs">
+                      좌측의 표준 규격 라이브러리(침대, 서랍장, 책상 등)에서 가구 종류를 클릭하여 소환해보세요.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Section: 선택된 요소의 상세 미세조정 */}
+            {selectedId && (
+              <div className="mt-4 bg-slate-950 p-4 rounded-xl border border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-4 items-center animate-[fadeIn_0.2s_ease-out]">
+                {/* 1. 현재 가구 규격 정보 */}
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider block">선택된 스티커</span>
+                  <p className="text-sm font-bold text-indigo-300">
+                    {furnitureList.find((i) => i.id === selectedId)?.name || '선택 없음'}
+                  </p>
+                  <p className="text-xs text-slate-400 font-mono">
+                    가상 크기: {Math.round(furnitureList.find((i) => i.id === selectedId)?.realWidth || 0)} x{' '}
+                    {Math.round(furnitureList.find((i) => i.id === selectedId)?.realHeight || 0)} cm
+                  </p>
+                </div>
+
+                {/* 2. 시각적인 오버레이를 위한 불투명도 세팅 */}
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs text-slate-300">
+                    <span>스티커 투명도 (배경 투사율)</span>
+                    <span className="font-mono text-indigo-400">
+                      {Math.round((furnitureList.find((i) => i.id === selectedId)?.opacity || 0) * 100)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.2"
+                    max="1.0"
+                    step="0.05"
+                    value={furnitureList.find((i) => i.id === selectedId)?.opacity || 0.8}
+                    onChange={(e) => updateOpacity(e.target.value)}
+                    className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                  />
+                </div>
+
+                {/* 3. 삭제 등 컨트롤 제어 단추 */}
+                <div className="flex justify-end space-x-2">
+                  <button
+                    onClick={() => {
+                      // 90도씩 바로 회전시킬 수 있는 퀵보정 기능 제공
+                      setFurnitureList((prev) =>
+                        prev.map((item) =>
+                          item.id === selectedId ? { ...item, rotation: (item.rotation + 90) % 360 } : item
+                        )
+                      );
+                    }}
+                    className="flex-1 md:flex-none px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition"
+                  >
+                    🔁 90도 회전
+                  </button>
+                  <button
+                    onClick={deleteSelected}
+                    className="flex-1 md:flex-none px-4 py-2 bg-red-950/60 hover:bg-red-900 border border-red-900/40 text-red-200 text-xs font-semibold rounded-lg transition"
+                  >
+                    🗑️ 스티커 제거
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Right Panel: 가구 리포트 및 기획 분석 요약 */}
+          <section className="w-full lg:w-[320px] border-l border-slate-800 bg-slate-950 p-5 flex flex-col space-y-6">
+            
+            {/* 가구 배치 실시간 면적 계산 리포트 */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-emerald-400 flex items-center gap-1.5">
+                📊 실시간 가구점 가상 견적서
+              </h3>
+              <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-3">
+                <div className="flex justify-between text-xs text-slate-400">
+                  <span>등록된 스티커 총수</span>
+                  <span className="font-bold text-slate-200">{furnitureList.length} 개</span>
+                </div>
+                <div className="flex justify-between text-xs text-slate-400">
+                  <span>총 소요 예상 면적</span>
+                  <span className="font-bold text-emerald-400 font-mono">
+                    {(furnitureList.reduce((acc, item) => acc + (item.realWidth * item.realHeight) / 33000, 0)).toFixed(1)} 평
+                  </span>
+                </div>
+                <hr className="border-slate-800" />
+                <div className="space-y-1">
+                  <span className="text-[10px] text-slate-400 font-bold">배치 리스트 요약:</span>
+                  <div className="max-h-[140px] overflow-y-auto space-y-1 pr-1">
+                    {furnitureList.map((item, idx) => (
+                      <div key={item.id} className="text-[11px] text-slate-300 flex justify-between bg-slate-950 p-1.5 rounded border border-slate-800/80">
+                        <span className="truncate max-w-[150px]">{idx + 1}. {item.name}</span>
+                        <span className="font-mono text-slate-400">{Math.round(item.realWidth)}x{Math.round(item.realHeight)}</span>
+                      </div>
+                    ))}
+                    {furnitureList.length === 0 && (
+                      <span className="text-xs text-slate-500 block py-2">배치된 내역이 없습니다.</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* B2C 제휴 마케팅 모델 데모 렌더링 영역 */}
+            {selectedId && furnitureList.find(i => i.id === selectedId) && (
+              <div className="space-y-3 animate-[fadeIn_0.3s_ease-out]">
+                <h3 className="text-sm font-semibold text-pink-400 flex items-center gap-1.5">
+                  🛒 이 규격에 맞는 추천 상품
+                </h3>
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-3 shadow-lg shadow-pink-900/10">
+                  <div className="text-[11px] text-slate-400 mb-2 leading-relaxed">
+                    <strong className="text-slate-200">{furnitureList.find(i => i.id === selectedId).name}</strong> ({Math.round(furnitureList.find(i => i.id === selectedId).realWidth)}cm) 사이즈가 쏙 들어가는 오늘의집 베스트 상품입니다.
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {(COMMERCE_MOCK_DATA[furnitureList.find(i => i.id === selectedId).type] || COMMERCE_MOCK_DATA['unknown']).map((prod, idx) => (
+                      <a
+                        key={idx}
+                        href="https://ohou.se"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-pink-500/40 transition group cursor-pointer"
+                      >
+                        <div className="w-12 h-12 rounded-md overflow-hidden bg-slate-800 shrink-0 border border-slate-700">
+                          <img src={prod.img} alt={prod.name} className="w-full h-full object-cover group-hover:scale-110 transition duration-300" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[9px] text-slate-500 mb-0.5">{prod.brand}</div>
+                          <div className="text-[11px] text-slate-200 font-medium truncate">{prod.name}</div>
+                          <div className="text-xs text-pink-400 font-bold mt-0.5 flex items-center gap-1.5">
+                            {prod.price}
+                            <span className="text-[8px] px-1 py-0.5 bg-pink-500/10 text-pink-400 rounded border border-pink-500/20 font-normal">{prod.badge}</span>
+                          </div>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                  <button 
+                    onClick={() => setShowStoreModal(true)}
+                    className="w-full py-2 mt-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] rounded-lg transition font-medium"
+                  >
+                    비슷한 상품 120개 더보기
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* AI 편의 기능 기획 가이드 요약 가이드박스 */}
+            <div className="p-4 rounded-xl bg-indigo-950/40 border border-indigo-900/30 space-y-2">
+              <h4 className="text-xs font-bold text-indigo-300">💡 5일 기획 핵심 구현 가이드</h4>
+              <p className="text-[11px] text-indigo-200/80 leading-relaxed">
+                사용자의 숫자를 일일이 입력해야 하는 피로를 제거하고, 오직 <strong>‘클릭’</strong>과 <strong>‘드래그 크기 매칭’</strong> 두 개로 압축했습니다. 
+              </p>
+              <p className="text-[11px] text-indigo-200/80 leading-relaxed">
+                스마트 자이로 센서 스캔 화면을 연출하여 초기 이탈을 방지하고 체험 만족도를 크게 늘리는 플레이스보 기법이 프로토타입에 기본 적용되었습니다.
+              </p>
+            </div>
+
+            {/* 액션 다운로드/공유하기 시뮬레이션 */}
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  // 임베드용 임시 클립보드 복사 시뮬레이션
+                  const dummyText = `[스페이스핏 AI 가구 배치 요약]\n${furnitureList.map((i) => `- ${i.name} (${Math.round(i.realWidth)}x${Math.round(i.realHeight)}cm)`).join('\n')}`;
+                  const textarea = document.createElement('textarea');
+                  textarea.value = dummyText;
+                  document.body.appendChild(textarea);
+                  textarea.select();
+                  document.execCommand('copy');
+                  document.body.removeChild(textarea);
+                  alert('📋 배치 목록 텍스트가 클립보드에 가상 복사되었습니다!\n\n' + dummyText);
+                }}
+                className="w-full py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-indigo-500/10 flex items-center justify-center gap-1"
+              >
+                💾 배치 리스트 텍스트로 내보내기
+              </button>
+              <button
+                onClick={() => {
+                  alert('📸 이미지 저장 기능 시뮬레이션: 현재 배치한 방의 구도가 데이터베이스에 임시로 저장되었습니다. (MVP 버전 완성)');
+                }}
+                className="w-full py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-bold rounded-xl transition"
+              >
+                📸 현재 레이아웃 저장하기
+              </button>
+            </div>
+
+          </section>
+
+        </main>
+      )}
+
+      {/* 3. 가상 인앱 스토어(제휴사 뷰) 모달 */}
+      {showStoreModal && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-slate-950/60 backdrop-blur-md animate-[fadeIn_0.2s_ease-out]">
+          {/* 가상 스토어 헤더 */}
+          <div className="bg-white text-slate-900 px-6 py-4 flex items-center justify-between border-b shadow-sm relative">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md">
+                O
+              </div>
+              <div>
+                <h2 className="font-extrabold text-base tracking-tight leading-none">오늘의집 x SpaceFit</h2>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  배치한 가구와 완벽하게 호환되는 베스트 상품을 만나보세요.
+                </p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowStoreModal(false)}
+              className="w-10 h-10 flex items-center justify-center bg-slate-100 hover:bg-slate-200 rounded-full font-bold text-slate-600 transition"
+            >
+              ✕
+            </button>
+          </div>
+          
+          {/* 스토어 본문 그리드 */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-6xl mx-auto space-y-6">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                ✨ 내 방 사이즈에 딱 맞는 맞춤 추천
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {/* 기존 MOCK 데이터에 가짜 상품들을 덧붙여 풍부한 그리드 생성 */}
+                {[
+                  ...COMMERCE_MOCK_DATA[furnitureList.find(i => i.id === selectedId)?.type || 'unknown'],
+                  ...COMMERCE_MOCK_DATA['unknown'],
+                  ...COMMERCE_MOCK_DATA[furnitureList.find(i => i.id === selectedId)?.type || 'unknown'],
+                  ...COMMERCE_MOCK_DATA['unknown'],
+                  ...COMMERCE_MOCK_DATA['unknown']
+                ].slice(0, 10).map((prod, idx) => (
+                  <a
+                    key={idx}
+                    href="https://ohou.se"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-white rounded-xl overflow-hidden shadow-lg hover:-translate-y-1 transition duration-300 group block"
+                  >
+                    <div className="aspect-square bg-slate-100 relative overflow-hidden">
+                      <img src={prod.img} alt={prod.name} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                      <div className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-red-500 text-white text-[9px] font-bold rounded shadow">
+                        특가
+                      </div>
+                    </div>
+                    <div className="p-3">
+                      <div className="text-[10px] text-slate-500 font-medium mb-1">{prod.brand}</div>
+                      <div className="text-xs text-slate-800 font-semibold leading-tight line-clamp-2 h-8">
+                        {prod.name} (선택 치수 호환)
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-sm font-extrabold text-blue-600">{prod.price}</span>
+                        <span className="text-[10px] text-slate-400 font-medium bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">제휴상품</span>
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

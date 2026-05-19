@@ -1,0 +1,2134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoomQuest AI - 게임처럼 즐기는 방 정리</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-primary: #090a10;
+            --bg-secondary: #121422;
+            --bg-glass: rgba(22, 25, 45, 0.65);
+            --bg-glass-hover: rgba(30, 34, 60, 0.8);
+            
+            --border-glow: rgba(139, 92, 246, 0.25);
+            --border-glass: rgba(255, 255, 255, 0.07);
+            
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            
+            --accent-purple: #8b5cf6;
+            --accent-pink: #ec4899;
+            --accent-cyan: #06b6d4;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-green: #10b981;
+            
+            --shadow-purple: 0 0 20px rgba(139, 92, 246, 0.3);
+            --shadow-cyan: 0 0 20px rgba(6, 182, 212, 0.3);
+            --shadow-amber: 0 0 20px rgba(245, 158, 11, 0.3);
+            --shadow-red: 0 0 20px rgba(239, 68, 68, 0.3);
+            --shadow-green: 0 0 20px rgba(16, 185, 129, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', 'Outfit', -apple-system, sans-serif;
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Container Layout */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header Layout */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 25px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 28px;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6));
+        }
+
+        .logo-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #ffffff, #d1d5db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-tag {
+            font-size: 11px;
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-purple);
+            padding: 2px 8px;
+            border-radius: 20px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            font-weight: 600;
+        }
+
+        /* Level / Experience Board */
+        .status-dashboard {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .level-badge {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+            border-radius: 12px;
+            padding: 8px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: var(--shadow-purple);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .level-badge span:first-child {
+            font-size: 10px;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            opacity: 0.8;
+        }
+
+        .level-badge span:last-child {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .xp-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 200px;
+        }
+
+        .xp-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .xp-bar-bg {
+            background: rgba(255, 255, 255, 0.05);
+            height: 10px;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border-glass);
+        }
+
+        .xp-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, var(--accent-purple), var(--accent-pink));
+            border-radius: 20px;
+            box-shadow: var(--shadow-purple);
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Main Workspace Grid */
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 25px;
+            align-items: start;
+        }
+
+        @media (max-width: 1024px) {
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glass Cards */
+        .panel {
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            margin-bottom: 25px;
+            transition: border-color 0.3s;
+        }
+
+        .panel:hover {
+            border-color: rgba(139, 92, 246, 0.15);
+        }
+
+        .panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-title i {
+            margin-right: 8px;
+            color: var(--accent-purple);
+        }
+
+        /* Video Feed Panel */
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            aspect-ratio: 4/3;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+        }
+
+        .video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Radar Overlay Animation */
+        .radar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            border: 2px solid transparent;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .radar-line {
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(180deg, rgba(6, 182, 212, 0) 0%, rgba(6, 182, 212, 0.6) 50%, rgba(6, 182, 212, 0) 100%);
+            position: absolute;
+            top: 0;
+            animation: radar-sweep 4s infinite linear;
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.8);
+            transition: opacity 0.5s ease;
+            opacity: 1;
+        }
+
+        .radar-line.paused {
+            animation-play-state: paused;
+            opacity: 0;
+        }
+
+        @keyframes radar-sweep {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+
+        .video-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+            color: var(--text-primary);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.25s ease;
+        }
+
+        .btn:hover {
+            background: var(--bg-glass-hover);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-active {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink)) !important;
+            border: none;
+            box-shadow: var(--shadow-purple);
+        }
+
+        .btn-active:hover {
+            box-shadow: 0 0 25px rgba(139, 92, 246, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-cyan {
+            background: linear-gradient(135deg, var(--accent-cyan), #0891b2) !important;
+            border: none;
+            box-shadow: var(--shadow-cyan);
+        }
+
+        .btn-cyan:hover {
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* Inventory Counter */
+        .inventory-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 18px;
+        }
+
+        .inventory-pill {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .inventory-pill:hover {
+            background: rgba(255, 255, 255, 0.06);
+            transform: scale(1.03);
+        }
+
+        .pill-count {
+            background: var(--accent-purple);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 20px;
+            padding: 1px 7px;
+        }
+
+        /* Right Panel: Custom Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-glass);
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 15px;
+            font-weight: 600;
+            padding: 10px 18px;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            color: var(--accent-purple);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, var(--accent-purple), var(--accent-pink));
+            border-radius: 10px;
+            box-shadow: var(--shadow-purple);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Quest Cards */
+        .quests-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: 520px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        /* Custom scrollbar for quests container */
+        .quests-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .quests-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .quests-container::-webkit-scrollbar-thumb {
+            background: var(--border-glass);
+            border-radius: 10px;
+        }
+        .quests-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .quest-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+            border: 1px solid var(--border-glass);
+            border-radius: 18px;
+            padding: 18px;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .quest-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-purple);
+            border-radius: 4px 0 0 4px;
+        }
+
+        /* Class Color Coding */
+        .quest-card[data-category="쓰레기/분리수거"]::before, 
+        .quest-card[data-category="쓰레기/음식물"]::before {
+            background: var(--accent-red);
+        }
+        .quest-card[data-category="정리 대상"]::before {
+            background: var(--accent-amber);
+        }
+        .quest-card[data-category="생활 객체"]::before {
+            background: var(--accent-cyan);
+        }
+
+        .quest-card:hover {
+            transform: translateX(4px);
+            border-color: rgba(255,255,255,0.15);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .quest-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .quest-title-area {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .quest-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .quest-meta {
+            display: flex;
+            gap: 8px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        .badge-red { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .badge-amber { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.2); }
+        .badge-cyan { background: rgba(6, 182, 212, 0.15); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.2); }
+        .badge-purple { background: rgba(139, 92, 246, 0.15); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.2); }
+
+        .quest-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Quest Details footer */
+        .quest-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .quest-stats {
+            display: flex;
+            gap: 15px;
+            font-weight: 500;
+        }
+
+        .quest-stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .quest-stats i {
+            color: var(--accent-purple);
+        }
+
+        .quest-difficulty {
+            color: var(--accent-amber);
+        }
+
+        .quest-xp-reward {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 11px;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        /* Expert Tip Box */
+        .tip-box {
+            background: rgba(6, 182, 212, 0.05);
+            border: 1px solid rgba(6, 182, 212, 0.15);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: #e2e8f0;
+            display: flex;
+            gap: 8px;
+            line-height: 1.4;
+        }
+
+        .tip-box i {
+            color: var(--accent-cyan);
+            margin-top: 2px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .checkbox-custom {
+            width: 24px;
+            height: 24px;
+            border: 2px solid rgba(255,255,255,0.25);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .checkbox-custom:hover {
+            border-color: var(--accent-purple);
+            background: rgba(139,92,246,0.1);
+        }
+
+        .checkbox-custom.checked {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            box-shadow: var(--shadow-green);
+        }
+
+        .checkbox-custom i {
+            font-size: 12px;
+            color: #fff;
+            display: none;
+        }
+
+        .checkbox-custom.checked i {
+            display: block;
+        }
+
+        /* Quest Card Checked styling */
+        .quest-card.completed {
+            opacity: 0.55;
+            background: rgba(255,255,255,0.01);
+            border-color: rgba(255,255,255,0.03);
+            text-decoration: line-through;
+            transform: scale(0.98);
+        }
+
+        /* Loading Board Overlay */
+        .scanning-loader {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            gap: 20px;
+        }
+
+        .cyber-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid transparent;
+            border-top: 4px solid var(--accent-purple);
+            border-right: 4px solid var(--accent-pink);
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+            filter: drop-shadow(0 0 10px var(--accent-purple));
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .scanning-text {
+            font-family: 'Outfit', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* Chat Coach Panel */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 480px;
+            background: rgba(255,255,255,0.01);
+            border: 1px solid var(--border-glass);
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .chat-history {
+            flex-grow: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-history::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-history::-webkit-scrollbar-thumb {
+            background: var(--border-glass);
+            border-radius: 10px;
+        }
+
+        .chat-bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 13.5px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .chat-bubble-ai {
+            align-self: flex-start;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border-glass);
+            color: var(--text-primary);
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-bubble-user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, var(--accent-purple), #6d28d9);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+            box-shadow: var(--shadow-purple);
+        }
+
+        .chat-input-area {
+            display: flex;
+            padding: 12px;
+            background: rgba(0,0,0,0.2);
+            border-top: 1px solid var(--border-glass);
+            gap: 8px;
+        }
+
+        .chat-input {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glass);
+            color: var(--text-primary);
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 13.5px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .chat-input:focus {
+            border-color: var(--accent-purple);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+        }
+
+        .chat-send-btn {
+            background: var(--accent-purple);
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .chat-send-btn:hover {
+            background: #7c3aed;
+            box-shadow: var(--shadow-purple);
+        }
+
+        /* Typing Dots Animation */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 4px 8px;
+            align-items: center;
+        }
+
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        /* Level Up Overlay Banner */
+        .level-up-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: #fff;
+            gap: 20px;
+            animation: zoomIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.7); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .level-up-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 64px;
+            font-weight: 900;
+            background: linear-gradient(to right, var(--accent-purple), var(--accent-pink), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            filter: drop-shadow(0 0 20px rgba(236, 72, 153, 0.8));
+            letter-spacing: -2px;
+            animation: bounce-slow 2s infinite;
+        }
+
+        @keyframes bounce-slow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .level-up-subtitle {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .level-up-icon {
+            font-size: 80px;
+            color: var(--accent-amber);
+            animation: rotate-chime 1.5s infinite ease;
+            filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.6));
+        }
+
+        @keyframes rotate-chime {
+            0%, 100% { transform: rotate(0) scale(1); }
+            50% { transform: rotate(15deg) scale(1.1); }
+        }
+
+        /* Floating Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* Empty State */
+        .empty-quests {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .empty-quests i {
+            font-size: 40px;
+            color: var(--text-muted);
+        }
+
+        /* Config warning */
+        .api-warning {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 12px;
+            padding: 10px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fca5a5;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        /* Floating Bottom Navigation Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            background: rgba(18, 20, 34, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 40px;
+            padding: 8px 12px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            z-index: 9999;
+            gap: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bottom-nav .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .bottom-nav .nav-item:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .bottom-nav .nav-item.active {
+            color: #fff;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+            box-shadow: var(--shadow-purple);
+        }
+
+        .bottom-nav .nav-item i {
+            font-size: 16px;
+        }
+
+        /* Ensure bottom container has padding so floating bar doesn't overlay elements */
+        .container {
+            padding-bottom: 120px !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Confetti canvas for level up and quest checkoff animations -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Level Up Screen Overlay -->
+    <div class="level-up-modal" id="levelUpModal">
+        <i class="fa-solid fa-crown level-up-icon"></i>
+        <h2 class="level-up-title">LEVEL UP!</h2>
+        <p class="level-up-subtitle" id="levelUpSub">레벨 2 수호자가 되었습니다!</p>
+        <button class="btn btn-active" onclick="closeLevelUpModal()" style="margin-top: 15px; padding: 12px 30px;">모험 계속하기</button>
+    </div>
+
+    <div class="container">
+        
+        <!-- Top Navigation / Status Header -->
+        <header>
+            <div class="logo-area">
+                <i class="fa-solid fa-wand-magic-sparkles logo-icon"></i>
+                <h1 class="logo-text">RoomQuest AI</h1>
+                <span class="logo-tag">Gemini 3.1 Flash Lite</span>
+            </div>
+            
+            <div class="status-dashboard">
+                <div class="level-badge">
+                    <span>LEVEL</span>
+                    <span id="headerLevel">1</span>
+                </div>
+                <div class="xp-container">
+                    <div class="xp-label">
+                        <span>경험치 (XP)</span>
+                        <span id="headerXP">0 / 100</span>
+                    </div>
+                    <div class="xp-bar-bg">
+                        <div class="xp-bar-fill" id="headerXPBar"></div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- API Key Status Warning if missing -->
+        {% if not has_api_key %}
+        <div class="api-warning">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span><strong>환경 변수 경고:</strong> <code>GEMINI_API_KEY</code>가 설정되지 않았습니다. .env 파일에 키를 저장해야 정리 퀘스트 생성 및 AI 코치 채팅이 정상 동작합니다.</span>
+        </div>
+        {% endif %}
+
+        <!-- Workspace main columns -->
+        <div class="workspace-grid">
+            
+            <!-- Left Column: Video Scan & Inventory -->
+            <div class="left-col">
+                
+                <!-- Live Scan Screen -->
+                <div class="panel">
+                    <div class="panel-title">
+                        <div><i class="fa-solid fa-satellite-dish"></i> 실시간 룸 스캔 카메라</div>
+                        <span class="logo-tag" style="background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border-color: rgba(6, 182, 212, 0.3);" id="streamStatus">데모 모드</span>
+                    </div>
+                    
+                    <div class="video-container">
+                        <img id="cameraStream" src="/video_feed" class="video-feed" alt="Video Stream">
+                        <div class="radar-overlay">
+                            <div class="radar-line" id="radarLine"></div>
+                        </div>
+                    </div>
+
+                    <div class="video-controls" style="flex-wrap: wrap; gap: 8px;">
+                        <button class="btn btn-active" id="btnDemo" onclick="setCameraMode('demo')">
+                            <i class="fa-solid fa-desktop"></i> 시뮬레이션 데모
+                        </button>
+                        <button class="btn" id="btnRealCam" onclick="setCameraMode('camera')">
+                            <i class="fa-solid fa-camera"></i> 실제 카메라 켜기
+                        </button>
+                        <label class="btn btn-cyan" id="btnUpload" style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin: 0;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> 방 사진 스캔
+                            <input type="file" id="roomImageUpload" accept="image/*" style="display: none;" onchange="uploadRoomImage(event)">
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Detected Items Room Inventory -->
+                <div class="panel">
+                    <div class="panel-title">
+                        <div><i class="fa-solid fa-list-check"></i> 감지된 방 안의 오브젝트</div>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">YOLO COCO 모델을 통해 실시간으로 감지된 정돈/분리배출 필요 아이템들입니다.</p>
+                    <div class="inventory-list" id="detectedInventory">
+                        <!-- Dynamically filled with pills -->
+                        <div style="color: var(--text-muted); font-size: 13px;"><i class="fa-solid fa-spinner fa-spin"></i> 로딩 중...</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Column: Interactive Tabs (Quests, AI Coach, Status) -->
+            <div class="right-col">
+                
+                <!-- 🚨 Surprise Time-Attack Mission Control Panel -->
+                <div class="panel" style="border-color: rgba(239, 68, 68, 0.25); background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(17, 24, 39, 0.75) 100%); margin-bottom: 20px;">
+                    <div class="panel-title" style="margin-bottom: 8px;">
+                        <div style="color: var(--accent-red); display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700;">
+                            <i class="fa-solid fa-triangle-exclamation fa-beat" style="color: var(--accent-red);"></i>
+                            <span>돌발 타임어택 정리 미션</span>
+                        </div>
+                        <span class="logo-tag" style="background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border-color: rgba(239, 68, 68, 0.3);" id="missionStatusTag">대기 중</span>
+                    </div>
+                    
+                    <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.5;">
+                        설정한 가능 시간대 범위 내에서 랜덤하게 청소 경보가 울립니다. 스캔 시 방이 완벽히 깨끗하면 <strong>대형 보상(+200 XP)</strong>을 획득하나, 지저분할 경우 <strong>제한 시간 내</strong> 정리 스캔을 마치지 못하면 <strong>경험치 감점(-50 XP) 및 감등(Level Down)</strong> 처벌을 받습니다!
+                    </p>
+
+                    <!-- Settings Grid -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 12px; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <div>
+                            <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">활동 시작 시간</label>
+                            <select id="missionStartHour" class="btn" style="width: 100%; font-size: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 5px; color:#fff;" onchange="updateMissionSettings()">
+                                <option value="18" selected>18:00 (18시)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;">활동 종료 시간</label>
+                            <select id="missionEndHour" class="btn" style="width: 100%; font-size: 12px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 5px; color:#fff;" onchange="updateMissionSettings()">
+                                <option value="22" selected>22:00 (22시)</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; align-items: flex-end;">
+                            <button class="btn btn-red" style="width: 100%; padding: 7px; font-size: 12px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; border: 1px solid rgba(239, 68, 68, 0.4);" onclick="simulateSurpriseAlarm()">
+                                <i class="fa-solid fa-bolt"></i> 미션 즉시 테스트
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Countdown Panel -->
+                    <div id="activeMissionPanel" style="display: none; background: rgba(239, 68, 68, 0.12); border: 1px dashed var(--accent-red); border-radius: 12px; padding: 12px; text-align: center; margin-top: 10px; animation: pulse 2s infinite;">
+                        <h4 style="color: var(--accent-red); margin-bottom: 4px; font-size: 14px; font-weight: 700;">
+                            <i class="fa-solid fa-skull-crossbones"></i> 비상 경보: 타임어택 카운트다운!
+                        </h4>
+                        <p style="font-size: 11.5px; color: var(--text-secondary); margin-bottom: 10px;">방을 완전히 치우고 카메라 스캔 또는 사진을 업로드해 완수하세요!</p>
+                        <div style="font-size: 26px; font-weight: 800; font-family: 'Outfit', sans-serif; color: #fff; text-shadow: 0 0 10px rgba(239,68,68,0.7);" id="missionTimer">
+                            02:00
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel" style="min-height: 600px; display: flex; flex-direction: column;">
+                    
+                    <!-- Tabs Header -->
+                    <div class="tabs">
+                        <button class="tab-btn active" onclick="switchTab(event, 'questsTab')">
+                            <i class="fa-solid fa-medal" style="margin-right: 6px;"></i>정리 퀘스트
+                        </button>
+                        <button class="tab-btn" onclick="switchTab(event, 'chatTab')">
+                            <i class="fa-solid fa-comment-dots" style="margin-right: 6px;"></i>정리 코치 AI
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: Quests Grid -->
+                    <div id="questsTab" class="tab-content active" style="flex-grow: 1; display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                            <span style="font-size: 13px; color: var(--text-secondary);">스캔된 물건들을 기반으로 생성된 퀘스트</span>
+                            <button class="btn btn-cyan" onclick="generateQuests()" style="padding: 8px 16px; font-size: 12.5px;">
+                                <i class="fa-solid fa-arrows-rotate"></i> 퀘스트 생성/갱신
+                            </button>
+                        </div>
+
+                        <!-- Scanning loader screen -->
+                        <div class="scanning-loader" id="questsLoader">
+                            <div class="cyber-spinner"></div>
+                            <span class="scanning-text">Gemini AI가 방 안의 사물들을 분석해 퀘스트를 생성하고 있습니다...</span>
+                        </div>
+
+                        <div class="quests-container" id="questsList">
+                            <!-- Filled dynamically -->
+                            <div class="empty-quests">
+                                <i class="fa-solid fa-compass-drafting"></i>
+                                <strong>아직 생성된 퀘스트가 없습니다.</strong>
+                                <p style="font-size: 12px; margin-top: 5px;">위의 '퀘스트 생성/갱신' 버튼을 눌러 스캔된 물건들을 기반으로 RPG 퀘스트를 시작하세요!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: AI Cleaning Coach Chat -->
+                    <div id="chatTab" class="tab-content" style="flex-grow: 1;">
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">방 정리 규칙, 수납 가이드, 얼룩 제거법 등 무엇이든 물어보세요!</p>
+                        
+                        <div class="chat-container">
+                            <div class="chat-history" id="chatHistory">
+                                <div class="chat-bubble chat-bubble-ai">
+                                    안녕하세요! 당신의 정리정돈을 도와줄 <strong>'깔끔 코치 AI'</strong>입니다. 
+                                    오늘 당신의 방을 어떻게 하면 마법처럼 깨끗하고 예쁘게 바꿀 수 있을지 고민이신가요? 
+                                    질문을 편하게 남겨주시면 꿀팁을 전수해 드릴게요! 🧹✨
+                                </div>
+                            </div>
+                            
+                            <div class="chat-input-area">
+                                <input type="text" class="chat-input" id="chatInput" placeholder="예: 옷장 옷 접는 꿀팁 알려줘, 침대보 세탁 주기..." onkeydown="if(event.key === 'Enter') sendChatMessage()">
+                                <button class="chat-send-btn" onclick="sendChatMessage()">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Note: Shop and SpaceFit tabs have been moved or removed to comply with separate page objective -->
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- MarkDown Parser Lite (Only simple parsing for Gemini rich text responses) -->
+    <script>
+        function parseMarkdown(text) {
+            let html = text;
+            // Headers
+            html = html.replace(/^### (.*$)/gim, '<h4 style="margin: 10px 0 5px 0; font-weight:700; color:var(--accent-cyan);">$1</h4>');
+            html = html.replace(/^## (.*$)/gim, '<h3 style="margin: 14px 0 6px 0; font-weight:700; color:var(--accent-purple);">$1</h3>');
+            html = html.replace(/^# (.*$)/gim, '<h2 style="margin: 16px 0 8px 0; font-weight:800;">$1</h2>');
+            
+            // Bold
+            html = html.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
+            html = html.replace(/\*(.*)\*/gim, '<em>$1</em>');
+            
+            // Bullet points
+            html = html.replace(/^\s*-\s+(.*)$/gim, '<li style="margin-left: 15px; margin-bottom: 4px; color:#e5e7eb;">$1</li>');
+            
+            // Linebreaks
+            html = html.replace(/\n/gim, '<br>');
+            
+            return html;
+        }
+    </script>
+
+    <!-- Web Audio Synthesizer For Sound Effects (pop, sweep, levelup) -->
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playPop() {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.15);
+                
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.15);
+            } catch (e) { console.log(e); }
+        }
+
+        function playChime() {
+            try {
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc1.type = 'triangle';
+                osc1.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.08); // E5
+                osc1.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.16); // G5
+                osc1.frequency.setValueAtTime(1046.50, audioCtx.currentTime + 0.24); // C6
+                
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(1046.50, audioCtx.currentTime + 0.24);
+                
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                
+                osc1.start();
+                osc2.start();
+                osc1.stop(audioCtx.currentTime + 0.5);
+                osc2.stop(audioCtx.currentTime + 0.5);
+            } catch (e) { console.log(e); }
+        }
+
+        function playLevelUp() {
+            try {
+                const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50, 1318.51]; // C4, E4, G4, C5, E5, G5, C6, E6
+                notes.forEach((freq, idx) => {
+                    setTimeout(() => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        
+                        osc.type = idx % 2 === 0 ? 'triangle' : 'sine';
+                        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                        
+                        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+                        
+                        osc.start();
+                        osc.stop(audioCtx.currentTime + 0.35);
+                    }, idx * 75);
+                });
+            } catch (e) { console.log(e); }
+        }
+
+        function playSirenSound() {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sawtooth';
+                const now = audioCtx.currentTime;
+                osc.frequency.setValueAtTime(440, now);
+                
+                for (let i = 0; i < 8; i++) {
+                    osc.frequency.linearRampToValueAtTime(880, now + i * 0.25 + 0.12);
+                    osc.frequency.linearRampToValueAtTime(440, now + i * 0.25 + 0.25);
+                }
+                
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 2.0);
+                
+                osc.start();
+                osc.stop(now + 2.0);
+            } catch (e) { console.log(e); }
+        }
+
+        function playFailureSound() {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.type = 'sawtooth';
+                const now = audioCtx.currentTime;
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.8);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.8);
+                
+                osc.start();
+                osc.stop(now + 0.8);
+            } catch (e) { console.log(e); }
+        }
+    </script>
+
+    <!-- Confetti Particles System -->
+    <script>
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 8 + 4;
+                this.speedX = Math.random() * 10 - 5;
+                this.speedY = Math.random() * -12 - 5;
+                this.color = `hsl(${Math.random() * 360}, 85%, 60%)`;
+                this.gravity = 0.3;
+                this.rotation = Math.random() * 360;
+                this.rotationSpeed = Math.random() * 10 - 5;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.speedY += this.gravity;
+                this.y += this.speedY;
+                this.rotation += this.rotationSpeed;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation * Math.PI / 180);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+                ctx.restore();
+            }
+        }
+
+        function createConfettiShower() {
+            // Burst from bottom center and sides
+            for(let i=0; i<100; i++) {
+                particles.push(new Particle(canvas.width / 2, canvas.height + 20));
+                particles.push(new Particle(Math.random() * canvas.width, -10));
+            }
+        }
+
+        function triggerLevelUpConfetti() {
+            createConfettiShower();
+            // multiple bursts
+            setTimeout(createConfettiShower, 300);
+            setTimeout(createConfettiShower, 600);
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, idx) => {
+                p.update();
+                p.draw();
+                // Remove out of bounds particles
+                if(p.y > canvas.height + 30 || p.x < -30 || p.x > canvas.width + 30) {
+                    particles.splice(idx, 1);
+                }
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+    </script>
+
+    <!-- Main Logic, State Manager and API calls -->
+    <script>
+        // Local State
+        let currentXP = parseInt(localStorage.getItem('roomquest_xp')) || 0;
+        let currentLevel = parseInt(localStorage.getItem('roomquest_level')) || 1;
+        let activeQuests = [];
+
+        // ⏱️ Surprise Time-Attack Mission State
+        let missionStartHour = parseInt(localStorage.getItem('mission_start_hour')) || 18;
+        let missionEndHour = parseInt(localStorage.getItem('mission_end_hour')) || 22;
+        let hasTriggeredToday = false;
+        let surpriseTargetHour = null;
+        let surpriseTargetMinute = null;
+        let missionActive = false;
+        let missionTimerInterval = null;
+        let missionTimeLeft = 120; // 120 seconds countdown
+
+        // Save State
+        function saveState() {
+            localStorage.setItem('roomquest_xp', currentXP);
+            localStorage.setItem('roomquest_level', currentLevel);
+        }
+
+        // Initialize UI
+        function updateXPDisplay() {
+            const nextLevelXP = currentLevel * 100;
+            const xpPct = (currentXP / nextLevelXP) * 100;
+            
+            document.getElementById('headerLevel').innerText = currentLevel;
+            document.getElementById('headerXP').innerText = `${currentXP} / ${nextLevelXP}`;
+            document.getElementById('headerXPBar').style.width = `${xpPct}%`;
+            saveState();
+        }
+
+        function addXP(amount) {
+            currentXP += amount;
+            const nextLevelXP = currentLevel * 100;
+            
+            if (currentXP < 0) {
+                // Experience points dropped below 0!
+                if (currentLevel > 1) {
+                    currentLevel--;
+                    // Wrap around to previous level's maximum XP minus the remainder
+                    const prevLevelXP = currentLevel * 100;
+                    currentXP = prevLevelXP + currentXP; 
+                } else {
+                    currentXP = 0;
+                }
+                playFailureSound();
+            } else if (currentXP >= nextLevelXP) {
+                currentXP = currentXP - nextLevelXP;
+                currentLevel++;
+                
+                // Play level-up sound and open level-up modal
+                playLevelUp();
+                triggerLevelUpConfetti();
+                
+                document.getElementById('levelUpSub').innerText = `레벨 ${currentLevel} 수호자로 거듭나셨습니다! 축하합니다! 🏆`;
+                document.getElementById('levelUpModal').style.display = 'flex';
+            } else {
+                if (amount > 0) {
+                    playChime();
+                    createConfettiShower();
+                } else {
+                    playFailureSound();
+                }
+            }
+            updateXPDisplay();
+        }
+
+        function closeLevelUpModal() {
+            document.getElementById('levelUpModal').style.display = 'none';
+        }
+
+        // Tab Switcher
+        function switchTab(evt, tabId) {
+            // Get all elements with class="tab-content" and hide them
+            const tabContents = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+
+            // Get all elements with class="tab-btn" and remove the class "active"
+            const tabBtns = document.getElementsByClassName("tab-btn");
+            for (let i = 0; i < tabBtns.length; i++) {
+                tabBtns[i].classList.remove("active");
+            }
+
+            // Show the current tab, and add an "active" class to the button that opened the tab
+            document.getElementById(tabId).classList.add("active");
+            evt.currentTarget.classList.add("active");
+        }
+
+        // Controls: Camera toggle
+        async function setCameraMode(mode) {
+            playPop();
+            try {
+                const response = await fetch(`/camera/start?mode=${mode}`);
+                const data = await response.json();
+                
+                const streamStatus = document.getElementById('streamStatus');
+                const btnDemo = document.getElementById('btnDemo');
+                const btnRealCam = document.getElementById('btnRealCam');
+                
+                if (data.status === 'failed') {
+                    alert("⚠️ " + (data.error || "실제 카메라를 켤 수 없습니다. 연결 상태를 확인해 주세요!"));
+                    if (mode === 'camera') {
+                        // Force fallback to demo
+                        setCameraMode('demo');
+                    }
+                    return;
+                }
+                
+                if (mode === 'camera') {
+                    streamStatus.innerText = '실시간 카메라';
+                    streamStatus.style.background = 'rgba(16, 185, 129, 0.15)';
+                    streamStatus.style.color = 'var(--accent-green)';
+                    streamStatus.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                    
+                    btnRealCam.classList.add('btn-active');
+                    btnDemo.classList.remove('btn-active');
+                } else {
+                    streamStatus.innerText = '데모 모드';
+                    streamStatus.style.background = 'rgba(6, 182, 212, 0.15)';
+                    streamStatus.style.color = 'var(--accent-cyan)';
+                    streamStatus.style.borderColor = 'rgba(6, 182, 212, 0.3)';
+                    
+                    btnDemo.classList.add('btn-active');
+                    btnRealCam.classList.remove('btn-active');
+                }
+                
+                // Restart scan sweep bar animation
+                document.getElementById('radarLine').classList.remove('paused');
+                
+                // Refresh stream source to bypass cache
+                const streamImg = document.getElementById('cameraStream');
+                streamImg.src = "/video_feed?t=" + new Date().getTime();
+                
+            } catch (error) {
+                console.error("Failed to start camera mode:", error);
+            }
+        }
+
+        async function uploadRoomImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            playPop();
+            
+            const streamStatus = document.getElementById('streamStatus');
+            const btnDemo = document.getElementById('btnDemo');
+            const btnRealCam = document.getElementById('btnRealCam');
+            
+            streamStatus.innerText = '사진 분석 중...';
+            streamStatus.style.background = 'rgba(245, 158, 11, 0.15)';
+            streamStatus.style.color = 'var(--accent-amber)';
+            streamStatus.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+            
+            // Start scan sweep bar during analysis
+            document.getElementById('radarLine').classList.remove('paused');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/camera/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    streamStatus.innerText = '사진 스캔 완료';
+                    streamStatus.style.background = 'rgba(169, 85, 247, 0.15)';
+                    streamStatus.style.color = 'var(--accent-purple)';
+                    streamStatus.style.borderColor = 'rgba(169, 85, 247, 0.3)';
+                    
+                    // Reset active states of other controls
+                    btnDemo.classList.remove('btn-active');
+                    btnRealCam.classList.remove('btn-active');
+                    
+                    // Stop and fade out the scan sweep bar since image scan is complete!
+                    document.getElementById('radarLine').classList.add('paused');
+                    
+                    // Force refresh streaming preview picture
+                    const streamImg = document.getElementById('cameraStream');
+                    streamImg.src = "/video_feed?t=" + new Date().getTime();
+                    
+                    // Check if surprise mission is active
+                    if (missionActive) {
+                        const items = data.detected || [];
+                        if (items.length === 0) {
+                            clearInterval(missionTimerInterval);
+                            missionActive = false;
+                            document.getElementById('activeMissionPanel').style.display = 'none';
+                            
+                            const statusTag = document.getElementById('missionStatusTag');
+                            statusTag.innerText = '미션 완료';
+                            statusTag.style.background = 'rgba(16, 185, 129, 0.15)';
+                            statusTag.style.color = 'var(--accent-green)';
+                            statusTag.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                            
+                            hasTriggeredToday = true;
+                            
+                            addXP(200);
+                            setTimeout(() => {
+                                alert("🏆 [돌발 스캔 미션 완벽 정복!]\n방이 완벽하게 깨끗한 상태로 확인되었습니다!\n방의 수호자 영웅 등극! 대형 정리 보상(+200 XP)을 획득하셨습니다! ✨");
+                            }, 500);
+                        } else {
+                            setTimeout(() => {
+                                alert(`⚠️ [점검 결과: 정리 미달]\n방에서 정리할 물건이 ${items.length}개 발견되었습니다.\n남은 시간 동안 이 물건들을 정리하고 다시 사진을 찍어 스캔하세요!`);
+                            }, 500);
+                        }
+                    }
+                    
+                    // Fetch inventory and trigger RPG Quest list generation instantly
+                    playChime();
+                    await fetchInventory();
+                    await generateQuests();
+                    await fetchRecommendations();
+                } else {
+                    alert("⚠️ 이미지 스캔에 실패했습니다: " + (data.error || "알 수 없는 오류"));
+                    setCameraMode('demo');
+                }
+            } catch (err) {
+                console.error("Upload failed:", err);
+                alert("⚠️ 이미지 분석 업로드 중 오류가 발생했습니다!");
+                setCameraMode('demo');
+            }
+        }
+
+        // Inventory Fetching Loop
+        async function fetchInventory() {
+            try {
+                const response = await fetch('/inventory');
+                const data = await response.json();
+                const invContainer = document.getElementById('detectedInventory');
+                
+                // Active Surprise Mission clean check!
+                if (missionActive && (!data.inventory || data.inventory.length === 0)) {
+                    clearInterval(missionTimerInterval);
+                    missionActive = false;
+                    document.getElementById('activeMissionPanel').style.display = 'none';
+                    
+                    const statusTag = document.getElementById('missionStatusTag');
+                    statusTag.innerText = '미션 완료';
+                    statusTag.style.background = 'rgba(16, 185, 129, 0.15)';
+                    statusTag.style.color = 'var(--accent-green)';
+                    statusTag.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                    
+                    hasTriggeredToday = true;
+                    
+                    addXP(200);
+                    setTimeout(() => {
+                        alert("🏆 [돌발 스캔 미션 완벽 정복!]\n방이 완벽하게 깨끗한 상태인 것이 감지되었습니다!\n방의 수호자 영웅 등극! 대형 정리 보상(+200 XP)을 획득하셨습니다! ✨");
+                    }, 500);
+                }
+                
+                if (!data.inventory || data.inventory.length === 0) {
+                    invContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 13px;"><i class="fa-solid fa-circle-check" style="color: var(--accent-green); margin-right: 6px;"></i>정리할 물건 없음 (깔끔함)</div>';
+                    return;
+                }
+                
+                let html = '';
+                data.inventory.forEach(item => {
+                    let colorGlowClass = '';
+                    if (item.category === '쓰레기/분리수거' || item.category === '쓰레기/음식물') {
+                        colorGlowClass = 'border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05); color: #fca5a5;';
+                    } else if (item.category === '정리 대상') {
+                        colorGlowClass = 'border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.05); color: #fcd34d;';
+                    } else {
+                        colorGlowClass = 'border-color: rgba(6,182,212,0.3); background: rgba(6,182,212,0.05); color: #67e8f9;';
+                    }
+                    
+                    html += `
+                        <div class="inventory-pill" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; margin-bottom: 8px; ${colorGlowClass}">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span>${item.icon} ${item.name}</span>
+                                <span class="pill-count" style="background: rgba(255,255,255,0.2); color: inherit; font-size:11px;">${item.count}개</span>
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                <button class="btn" style="padding: 3px 8px; font-size: 10.5px; border-radius: 4px; border: 1px solid rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.1); color: var(--accent-green); cursor: pointer;" onclick="showRecycleGuide('${item.key}', '${item.name}')">
+                                    <i class="fa-solid fa-recycle"></i> 분리배출
+                                </button>
+                                <button class="btn" style="padding: 3px 8px; font-size: 10.5px; border-radius: 4px; border: 1px solid rgba(6, 182, 212, 0.4); background: rgba(6, 182, 212, 0.1); color: var(--accent-cyan); cursor: pointer;" onclick="showSpaceFitRecommendation('${item.key}', '${item.name}')">
+                                    <i class="fa-solid fa-couch"></i> 가구 매칭
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                invContainer.innerHTML = html;
+            } catch (err) {
+                console.error("Failed to fetch inventory:", err);
+            }
+        }
+
+        // Periodically check inventory
+        setInterval(fetchInventory, 2500);
+        fetchInventory();
+
+        // Generate Quests
+        async function generateQuests() {
+            playPop();
+            const loader = document.getElementById('questsLoader');
+            const listContainer = document.getElementById('questsList');
+            
+            loader.style.display = 'flex';
+            listContainer.style.display = 'none';
+            
+            try {
+                const response = await fetch('/generate_quests');
+                const data = await response.json();
+                
+                loader.style.display = 'none';
+                listContainer.style.display = 'flex';
+                
+                activeQuests = data.quests || [];
+                
+                if (activeQuests.length === 0) {
+                    listContainer.innerHTML = `
+                        <div class="empty-quests">
+                            <i class="fa-solid fa-star-and-crescent" style="color: var(--accent-cyan);"></i>
+                            <strong>방이 완전 완벽해요!</strong>
+                            <p style="font-size: 12px; margin-top: 5px;">현재 정리할 대상이 발견되지 않았습니다. 환기나 탈취 퀘스트를 추천합니다!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                activeQuests.forEach(quest => {
+                    let badgeClass = 'badge-purple';
+                    if (quest.category === '쓰레기/분리수거' || quest.category === '쓰레기/음식물') badgeClass = 'badge-red';
+                    else if (quest.category === '정리 대상') badgeClass = 'badge-amber';
+                    else if (quest.category === '생활 객체') badgeClass = 'badge-cyan';
+                    
+                    let difficultyStars = '';
+                    for (let s = 0; s < 5; s++) {
+                        difficultyStars += s < quest.difficulty ? '<i class="fa-solid fa-star"></i>' : '<i class="fa-regular fa-star"></i>';
+                    }
+                    
+                    html += `
+                        <div class="quest-card" id="quest-${quest.id}" data-category="${quest.category}">
+                            <div class="quest-header">
+                                <div class="quest-title-area">
+                                    <div class="quest-meta">
+                                        <span class="badge ${badgeClass}">${quest.category}</span>
+                                    </div>
+                                    <h4 class="quest-title">${quest.title}</h4>
+                                </div>
+                                <div class="checkbox-container">
+                                    <div class="checkbox-custom" id="chk-${quest.id}" onclick="completeQuest(${quest.id}, ${quest.xp})">
+                                        <i class="fa-solid fa-check"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <p class="quest-description">${quest.description}</p>
+                            
+                            <div class="tip-box">
+                                <i class="fa-solid fa-lightbulb"></i>
+                                <div><strong>정리 꿀팁:</strong> ${quest.tip}</div>
+                            </div>
+                            
+                            <div class="quest-footer">
+                                <div class="quest-stats">
+                                    <span><i class="fa-solid fa-hourglass-half"></i> 예상 ${quest.time}분</span>
+                                    <span class="quest-difficulty">${difficultyStars}</span>
+                                </div>
+                                <span class="quest-xp-reward">+ ${quest.xp} XP</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                listContainer.innerHTML = html;
+                
+            } catch (err) {
+                console.error("Failed to generate quests:", err);
+                loader.style.display = 'none';
+                listContainer.style.display = 'flex';
+                listContainer.innerHTML = `
+                    <div class="empty-quests">
+                        <i class="fa-solid fa-circle-xmark" style="color: var(--accent-red);"></i>
+                        <strong>퀘스트 호출 오류가 발생했습니다.</strong>
+                        <p style="font-size: 12px; margin-top: 5px;">환경 변수 또는 API 설정을 점검해 주세요. (에러: ${err.message})</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Check off Quest
+        function completeQuest(questId, xpReward) {
+            const checkbox = document.getElementById(`chk-${questId}`);
+            const card = document.getElementById(`quest-${questId}`);
+            
+            if (checkbox.classList.contains('checked')) return; // Already checked
+            
+            checkbox.classList.add('checked');
+            card.classList.add('completed');
+            
+            // Add experience point with beautiful chime sound
+            addXP(xpReward);
+        }
+
+        // Chat with Clean Coach AI
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const history = document.getElementById('chatHistory');
+            const query = input.value.trim();
+            
+            if (!query) return;
+            
+            // Clear input
+            input.value = '';
+            playPop();
+            
+            // Append User Message
+            const userMsgHtml = `<div class="chat-bubble chat-bubble-user">${query}</div>`;
+            history.insertAdjacentHTML('beforeend', userMsgHtml);
+            history.scrollTop = history.scrollHeight;
+            
+            // Append typing dots
+            const dotsId = "dots-" + new Date().getTime();
+            const dotsHtml = `
+                <div class="chat-bubble chat-bubble-ai" id="${dotsId}">
+                    <div class="typing-indicator">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                    </div>
+                </div>
+            `;
+            history.insertAdjacentHTML('beforeend', dotsHtml);
+            history.scrollTop = history.scrollHeight;
+            
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: query })
+                });
+                const data = await response.json();
+                
+                // Remove typing dots
+                document.getElementById(dotsId).remove();
+                
+                // Append AI reply parsed as HTML
+                const parsedReply = parseMarkdown(data.response);
+                const aiMsgHtml = `<div class="chat-bubble chat-bubble-ai">${parsedReply}</div>`;
+                history.insertAdjacentHTML('beforeend', aiMsgHtml);
+                history.scrollTop = history.scrollHeight;
+                
+            } catch (err) {
+                console.error("Chat failure:", err);
+                document.getElementById(dotsId).remove();
+                const errHtml = `<div class="chat-bubble chat-bubble-ai" style="color: var(--accent-red);">죄송합니다. 깔끔 코치와의 무선 연결에 문제가 생겼습니다! 다시 시도해 주세요.</div>`;
+                history.insertAdjacentHTML('beforeend', errHtml);
+                history.scrollTop = history.scrollHeight;
+            }
+        }
+
+        // ⏱️ Surprise Time-Attack Mission Controller
+        function initHourDropdowns() {
+            const startSelect = document.getElementById('missionStartHour');
+            const endSelect = document.getElementById('missionEndHour');
+            if (!startSelect || !endSelect) return;
+            
+            startSelect.innerHTML = '';
+            endSelect.innerHTML = '';
+            
+            for(let i = 0; i < 24; i++) {
+                let optStart = document.createElement('option');
+                optStart.value = i;
+                optStart.innerText = `${i.toString().padStart(2, '0')}:00 (${i}시)`;
+                if(i === missionStartHour) optStart.selected = true;
+                startSelect.appendChild(optStart);
+                
+                let optEnd = document.createElement('option');
+                optEnd.value = i;
+                optEnd.innerText = `${i.toString().padStart(2, '0')}:00 (${i}시)`;
+                if(i === missionEndHour) optEnd.selected = true;
+                endSelect.appendChild(optEnd);
+            }
+        }
+
+        function updateMissionSettings() {
+            missionStartHour = parseInt(document.getElementById('missionStartHour').value);
+            missionEndHour = parseInt(document.getElementById('missionEndHour').value);
+            
+            localStorage.setItem('mission_start_hour', missionStartHour);
+            localStorage.setItem('mission_end_hour', missionEndHour);
+            
+            recalculateSurpriseTarget();
+        }
+
+        function recalculateSurpriseTarget() {
+            if (missionEndHour <= missionStartHour) {
+                surpriseTargetHour = missionStartHour;
+            } else {
+                surpriseTargetHour = Math.floor(Math.random() * (missionEndHour - missionStartHour)) + missionStartHour;
+            }
+            surpriseTargetMinute = Math.floor(Math.random() * 60);
+            console.log(`[Surprise Mission] Scheduled target for today: ${surpriseTargetHour.toString().padStart(2, '0')}:${surpriseTargetMinute.toString().padStart(2, '0')}`);
+        }
+
+        function simulateSurpriseAlarm() {
+            if (missionActive) {
+                alert("⚠️ 이미 돌발 미션 경보가 작동 중입니다!");
+                return;
+            }
+            triggerSurpriseAlarm();
+        }
+
+        function triggerSurpriseAlarm() {
+            playSirenSound();
+            missionActive = true;
+            missionTimeLeft = 120; // 120 seconds countdown
+            
+            const statusTag = document.getElementById('missionStatusTag');
+            statusTag.innerText = '🚨 경보 가동';
+            statusTag.style.background = 'rgba(239, 68, 68, 0.15)';
+            statusTag.style.color = 'var(--accent-red)';
+            statusTag.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+            
+            document.getElementById('activeMissionPanel').style.display = 'block';
+            updateTimerDisplay();
+            
+            if (missionTimerInterval) clearInterval(missionTimerInterval);
+            missionTimerInterval = setInterval(updateSurpriseMissionTimer, 1000);
+            
+            alert("🚨 [RoomQuest AI 비상 정리 경보]\n사용자 설정 가능 시간대에 따른 무작위 위생 점검 미션이 가동되었습니다!\n제한시간 120초 안에 방을 정리하고 사진을 올려 스캔을 완료하세요!");
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(missionTimeLeft / 60).toString().padStart(2, '0');
+            const seconds = (missionTimeLeft % 60).toString().padStart(2, '0');
+            document.getElementById('missionTimer').innerText = `${minutes}:${seconds}`;
+        }
+
+        function updateSurpriseMissionTimer() {
+            missionTimeLeft--;
+            updateTimerDisplay();
+            
+            if (missionTimeLeft <= 0) {
+                clearInterval(missionTimerInterval);
+                missionActive = false;
+                
+                document.getElementById('activeMissionPanel').style.display = 'none';
+                
+                const statusTag = document.getElementById('missionStatusTag');
+                statusTag.innerText = '미션 실패';
+                statusTag.style.background = 'rgba(239, 68, 68, 0.15)';
+                statusTag.style.color = 'var(--accent-red)';
+                statusTag.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                
+                // Deduct 50 XP as penalty!
+                addXP(-50);
+                alert("⏰ [미션 타임아웃 종료]\n제한시간 120초 동안 정리를 완수하지 못했습니다!\n게으름에 대한 대가로 경험치 50 XP가 삭감되었습니다! 💀");
+            }
+        }
+
+        function checkSurpriseScheduler() {
+            const now = new Date();
+            const curHour = now.getHours();
+            const curMin = now.getMinutes();
+            
+            // Midnight reset
+            if (curHour === 0 && curMin === 0) {
+                hasTriggeredToday = false;
+                recalculateSurpriseTarget();
+            }
+            
+            if (curHour === surpriseTargetHour && curMin === surpriseTargetMinute) {
+                if (!hasTriggeredToday && !missionActive) {
+                    triggerSurpriseAlarm();
+                }
+            }
+        }
+
+        // 🛍️ 오늘의집 Affiliate Recommendations Fetcher
+        async function fetchRecommendations() {
+            const listContainer = document.getElementById('shopList');
+            if (!listContainer) return;
+            
+            try {
+                const response = await fetch('/api/recommendations');
+                const data = await response.json();
+                
+                const products = data.recommendations || [];
+                
+                if (products.length === 0) {
+                    listContainer.innerHTML = `
+                        <div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 40px 0;">
+                            <i class="fa-solid fa-circle-check" style="font-size: 24px; color: var(--accent-green); margin-bottom: 10px;"></i>
+                            <p>추천 제품을 찾을 수 없습니다.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '';
+                products.forEach(item => {
+                    html += `
+                        <div class="quest-card" style="display: flex; gap: 14px; padding: 12px; align-items: center; border-color: rgba(255,255,255,0.06); background: rgba(255,255,255,0.01);">
+                            <img src="${item.img}" alt="${item.name}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            
+                            <div style="flex-grow: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">${item.brand}</span>
+                                    <span class="badge badge-purple" style="font-size: 10px; padding: 2px 6px;">${item.category}</span>
+                                </div>
+                                <h4 style="font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 6px; line-height: 1.4;">${item.name}</h4>
+                                
+                                <div style="display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px;">
+                                    <span style="font-size: 13px; font-weight: 800; color: var(--accent-red);">${item.discount}</span>
+                                    <span style="font-size: 13px; font-weight: 800; color: #fff;">${item.price}</span>
+                                    <span style="font-size: 11px; color: var(--text-muted); text-decoration: line-through;">${item.original_price}</span>
+                                </div>
+                                
+                                <p style="font-size: 11.5px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.4;">${item.description}</p>
+                                
+                                <div style="display: flex; gap: 8px;">
+                                    <a href="${item.url}" target="_blank" class="btn btn-cyan" style="padding: 6px 12px; font-size: 11px; text-decoration: none; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;" onclick="playPop()">
+                                        <i class="fa-solid fa-bag-shopping"></i> 오늘의집 구매
+                                    </a>
+                                    <button class="btn" style="padding: 6px 12px; font-size: 11px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.2); color:#fff;" onclick="simulateSpaceFitFitting('${item.brand}', '${item.name}')">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> 3D 배치
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                listContainer.innerHTML = html;
+                
+            } catch (err) {
+                console.error("Failed to load recommendations:", err);
+                listContainer.innerHTML = `
+                    <div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 40px 0;">
+                        <i class="fa-solid fa-circle-xmark" style="font-size: 24px; color: var(--accent-red); margin-bottom: 10px;"></i>
+                        <p>추천 제품 목록을 불러오지 못했습니다.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function simulateSpaceFitFitting(brand, name) {
+            playChime();
+            alert(`🎨 [SpaceFit AI 가상 가구 배치 연동]\n\n'${brand} ${name}' 제품의 실측 3D 모델을 배치 작업실(SpaceFit Canvas)에 로드했습니다!\n\n가상의 가구를 드래그하거나 회전하여 어울리는 공간 매칭률을 시각화해 보세요!`);
+        }
+
+        function showRecycleGuide(itemKey, itemName) {
+            playPop();
+            
+            const guides = {
+                "bottle": "🥤 [페트병 분리수거 비법]\n1. 내용물을 완전히 비우고 물로 한 번 헹급니다.\n2. 겉면의 비닐 라벨(상표)을 완전히 제거하여 비닐로 따로 분리합니다.\n3. 페트병을 힘껏 밟아 납작하게 압착한 뒤 뚜껑을 닫아 플라스틱으로 배출합니다.",
+                "cup": "☕ [일회용컵/머그잔 정리 가이드]\n1. 일회용 종이컵/플라스틱컵은 내용물을 비우고 물로 가볍게 세척한 뒤 각각 종이/플라스틱 수거함에 분리 배출합니다.\n2. 세라믹 머그잔이나 유리컵은 재활용되지 않는 불연성 쓰레기(마대자루)에 별도로 분리 폐기해야 합니다.",
+                "book": "📚 [헌책/서적 분리수거 비법]\n1. 책 표지가 비닐 코팅되어 있거나 스프링, 철사, 플라스틱 등이 결합되어 있다면 반드시 먼저 칼로 잘라내어 분리수거해야 합니다.\n2. 순수한 종이 부분만 차곡차곡 쌓아 끈으로 묶거나 상자에 담아 종이류로 배출합니다.",
+                "backpack": "🎒 [오래된 의류/배낭 폐기 요령]\n1. 상태가 양호하여 재사용이 가능하다면 근처 의류 수거함에 세탁 후 넣으실 수 있습니다.\n2. 오염이 심하거나 가죽/지퍼 부속품이 낡아 복구 불가능할 경우 일반 생활 쓰레기 규격봉투에 버려주시는 것이 맞습니다."
+            };
+            
+            const tip = guides[itemKey] || `✨ [일반 정리/정돈 가이드]\n사용 빈도가 낮은 물건은 밀폐용 상자에 깔끔히 담아 라벨링한 후 수납장 하단에 보관하세요!`;
+            
+            alert(`♻️ [RoomQuest AI - 스마트 분리배출/폐기법 가이드]\n\n대상: ${itemName}\n\n${tip}`);
+        }
+
+        function showSpaceFitRecommendation(itemKey, itemName) {
+            playPop();
+            
+            const recommendations = {
+                "bottle": {
+                    brand: "모던리빙",
+                    name: "3단 스탠드 분리수거함 (틈새 활용형)",
+                    price: "29,900원",
+                    original: "39,900원",
+                    discount: "25%",
+                    img: "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&w=150&q=80",
+                    url: "/spacefit?trigger=bottle"
+                },
+                "cup": {
+                    brand: "스탠리",
+                    name: "어드벤처 진공 텀블러 591ml",
+                    price: "39,000원",
+                    original: "49,000원",
+                    discount: "20%",
+                    img: "https://images.unsplash.com/photo-1577937927133-66ef06acdf18?auto=format&fit=crop&w=150&q=80",
+                    url: "/spacefit?trigger=cup"
+                },
+                "book": {
+                    brand: "데스커",
+                    name: "미니멀 3단 오픈 책꽂이 1200",
+                    price: "79,000원",
+                    original: "99,000원",
+                    discount: "20%",
+                    img: "https://images.unsplash.com/photo-1544644181-1484b3fdfc62?auto=format&fit=crop&w=150&q=80",
+                    url: "/spacefit?trigger=book"
+                },
+                "backpack": {
+                    brand: "한샘",
+                    name: "A형 원목 스탠드 옷걸이 행거",
+                    price: "24,900원",
+                    original: "35,000원",
+                    discount: "28%",
+                    img: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=150&q=80",
+                    url: "/spacefit?trigger=backpack"
+                }
+            };
+            
+            const rec = recommendations[itemKey] || {
+                brand: "스페이스핏",
+                name: "공간 맞춤 인기 인테리어 소품",
+                price: "15,000원",
+                original: "20,000원",
+                discount: "25%",
+                img: "https://images.unsplash.com/photo-1583847268964-b28ce8f89f86?auto=format&fit=crop&w=150&q=80",
+                url: "/spacefit"
+            };
+            
+            const confirmFitting = confirm(
+                `🛋️ [RoomQuest × SpaceFit 업그레이드 추천]\n\n` +
+                `이 물건(${itemName})을 완벽히 치우고 이 공간에 새로 채워줄 맞춤 프리미엄 제품을 추천해 드립니다!\n\n` +
+                `👉 추천 상품: [${rec.brand}] ${rec.name}\n` +
+                `👉 제휴 혜택가: ${rec.price} (정가: ${rec.original} | ${rec.discount} 할인!)\n\n` +
+                `확인 버튼을 누르시면, SpaceFit AI 가상 공간 배치실로 이동하여 이 가구 모델을 실측 스케일로 즉시 배치 시각화(Fitting)해 볼 수 있습니다. 이동하시겠습니까?`
+            );
+            
+            if (confirmFitting) {
+                // Redirect directly to SpaceFit page
+                window.location.href = rec.url;
+            }
+        }
+
+        // Initialize Mission Setup
+        initHourDropdowns();
+        recalculateSurpriseTarget();
+        setInterval(checkSurpriseScheduler, 10000);
+        fetchRecommendations();
+
+        // Initialize XP bar
+        updateXPDisplay();
+    </script>
+
+    <!-- Floating Bottom Navigation Bar -->
+    <div class="bottom-nav">
+        <a href="/roomquest/index.html" class="nav-item active">
+            <i class="fa-solid fa-house"></i>
+            <span>홈 대시보드</span>
+        </a>
+        <a href="/spacefit" class="nav-item">
+            <i class="fa-solid fa-compass-drafting"></i>
+            <span>가구 배치실</span>
+        </a>
+    </div>
+</body>
+</html>
