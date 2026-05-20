@@ -14,6 +14,8 @@ import {
 import { pickRecorderMime } from '@/lib/chungsora/captureVideo';
 import { toLogDateParam } from '@/lib/chungsora/logV2';
 import { useCleaningSessionStore, type QuestItem } from '@/lib/chungsora/cleaningSessionStore';
+import { AiModelAlert } from '@/components/chungsora/AiModelAlert';
+import { AI_MODEL_ALERT_DEFAULT, isAiModelError } from '@/lib/chungsora/modelAlert';
 
 const SLOTS = ['입구', '바닥', '책상'] as const;
 const CAPTURE_SEC = 20;
@@ -96,6 +98,8 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   const [coachOn, setCoachOn] = useState(true);
   const [subtitle, setSubtitle] = useState('');
   const [error, setError] = useState('');
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertMessage, setAlertMessage] = useState('');
   const [processing, setProcessing] = useState(false);
   const [recording, setRecording] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
@@ -121,6 +125,18 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
       window.speechSynthesis.speak(u);
     }
   }, []);
+
+  const showFailure = useCallback(
+    (msg: string) => {
+      setError(msg);
+      if (isAiModelError(msg)) {
+        setAlertMessage(msg.trim() || AI_MODEL_ALERT_DEFAULT);
+        setAlertOpen(true);
+      }
+      speak(msg);
+    },
+    [speak],
+  );
 
   useEffect(() => {
     void fetchFamilySummary()
@@ -239,8 +255,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
       else onComplete?.();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'AI 평가에 실패했습니다.';
-      setError(msg);
-      speak(msg);
+      showFailure(msg);
     } finally {
       setProcessing(false);
       setRecording(false);
@@ -269,8 +284,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
       await finalizeAllSlots(nextCaptures as File[]);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '저장에 실패했습니다.';
-      setError(msg);
-      speak(msg);
+      showFailure(msg);
     } finally {
       setProcessing(false);
       setRecording(false);
@@ -478,6 +492,12 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
           </button>
         )}
       </div>
+
+      <AiModelAlert
+        open={alertOpen}
+        message={alertMessage}
+        onClose={() => setAlertOpen(false)}
+      />
     </div>
   );
 }
