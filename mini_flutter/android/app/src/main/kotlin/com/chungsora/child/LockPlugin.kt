@@ -1,6 +1,7 @@
 package com.chungsora.child
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -60,7 +61,7 @@ class LockPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             when (call.method) {
                 "isDeviceOwner" -> result.success(dpm().isDeviceOwnerApp(appContext.packageName))
                 "isAdminActive" -> result.success(dpm().isAdminActive(adminComponent))
-                "isLockTaskActive" -> result.success(activity?.isInLockTaskMode == true)
+                "isLockTaskActive" -> result.success(isLockTaskActive(activity))
                 "getStatus" -> result.success(buildStatusMap())
                 "requestAdmin" -> {
                     val act = activity
@@ -123,21 +124,28 @@ class LockPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         }
     }
 
+    private fun isLockTaskActive(activity: Activity?): Boolean {
+        val act = activity ?: return false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return false
+        val am = act.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        return am.lockTaskModeState != ActivityManager.LOCK_TASK_MODE_NONE
+    }
+
     private fun buildDiagnosticsMap(): Map<String, Any?> {
         val p = LockHelper.prefs(appContext)
         val packages = resolveAllowlistPackages(LockHelper.readAllowlist(appContext))
         return mapOf(
             "deviceOwner" to dpm().isDeviceOwnerApp(appContext.packageName),
             "adminActive" to dpm().isAdminActive(adminComponent),
-            "lockTaskActive" to (activity?.isInLockTaskMode == true),
+            "lockTaskActive" to isLockTaskActive(activity),
             "locked" to p.getBoolean(LockHelper.KEY_LOCKED, false),
             "monitorRunning" to LockMonitorService.running,
             "batteryOptimized" to isIgnoringBatteryOptimizations(),
             "nextAlarmAt" to p.getLong(LockHelper.KEY_NEXT_ALARM_AT, 0L),
             "lastNativeCheck" to p.getLong(LockHelper.KEY_LAST_NATIVE_CHECK, 0L),
             "lastPolicySync" to p.getLong(LockHelper.KEY_LAST_POLICY_SYNC, 0L),
-            "cachedLockTime" to p.getString(LockHelper.KEY_LOCK_TIME),
-            "cachedLockDays" to p.getString(LockHelper.KEY_LOCK_DAYS),
+            "cachedLockTime" to p.getString(LockHelper.KEY_LOCK_TIME, null),
+            "cachedLockDays" to p.getString(LockHelper.KEY_LOCK_DAYS, null),
             "nativeShouldLock" to LockHelper.shouldLockNow(appContext),
             "resolvedPackages" to packages,
             "paired" to p.getBoolean(LockHelper.KEY_PAIRED, false),
@@ -170,7 +178,7 @@ class LockPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
         return mapOf(
             "deviceOwner" to dpm().isDeviceOwnerApp(appContext.packageName),
             "adminActive" to dpm().isAdminActive(adminComponent),
-            "lockTaskActive" to (activity?.isInLockTaskMode == true),
+            "lockTaskActive" to isLockTaskActive(activity),
             "locked" to p.getBoolean(LockHelper.KEY_LOCKED, false),
         )
     }
@@ -200,7 +208,7 @@ class LockPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
             )
         }
 
-        if (!act.isInLockTaskMode) {
+        if (!isLockTaskActive(act)) {
             act.startLockTask()
         }
 
@@ -218,7 +226,7 @@ class LockPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
 
     private fun stopLock(result: MethodChannel.Result) {
         val act = activity
-        if (act != null && act.isInLockTaskMode) {
+        if (act != null && isLockTaskActive(act)) {
             act.stopLockTask()
         }
 
