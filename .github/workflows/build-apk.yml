@@ -137,7 +137,13 @@ jobs:
       - name: 빌드 로그 공개 (항상)
         if: always()
         run: |
-          tail -c 12000 build-apk.log > public/build-tail.txt 2>/dev/null || echo "no build-apk.log" > public/build-tail.txt
+          {
+            echo "=== Gradle/Kotlin errors ==="
+            grep -E "^(FAILURE:|\\* What went wrong|Execution failed|e: file|error: |> Task :app:)" build-apk.log || true
+            echo ""
+            echo "=== Last 80 lines ==="
+            tail -n 80 build-apk.log || true
+          } > public/build-tail.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/build-tail.txt
