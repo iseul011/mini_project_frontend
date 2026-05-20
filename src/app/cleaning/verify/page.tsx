@@ -37,7 +37,7 @@ export default function VerifyShotPage() {
       comment = res.comment
       modelLabel = res.model_label ? `${res.model_label} AI` : visionAi
     } catch {
-      cleanliness = Math.floor(Math.random() * 10 + 88)
+      cleanliness = 85
       comment = 'AI 연결 실패 — 기본 점수가 부여되었습니다.'
     }
 

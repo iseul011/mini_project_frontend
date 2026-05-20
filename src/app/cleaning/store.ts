@@ -21,7 +21,11 @@ interface CleaningStore {
   acceptQuest: () => void
   startTimeAttack: () => void
   checkItem: (roomId: string, itemId: string) => void
-  setBeforePhoto: (roomId: string, url: string) => void
+  setBeforePhoto: (
+    roomId: string,
+    url: string,
+    scan?: { monsters: { id: string; name: string; grade: string; location: string; icon: string; ability: string; ability_desc?: string; exp: number; gold: number }[]; pollution_level: number },
+  ) => void
   setAfterPhoto: (roomId: string, url: string, cleanliness: number) => void
   completeRoom: (roomId: string) => void
   gainExp: (amount: number, goldAmount: number) => void
@@ -68,16 +72,30 @@ export const useCleaningStore = create<CleaningStore>()(
           },
         })),
 
-      setBeforePhoto: (roomId, url) =>
-        set(s => ({
-          photoSession: {
-            roomId,
-            beforePhotoUrl: url,
-            beforePollution: s.quest.rooms.find(r => r.id === roomId)?.pollutionLevel ?? 70,
-            afterCleanliness: 0,
-            monstersDetected: s.quest.rooms.find(r => r.id === roomId)?.monsters ?? [],
-          },
-        })),
+      setBeforePhoto: (roomId, url, scan) =>
+        set((s) => {
+          const monsters = scan?.monsters?.map((m) => ({
+            id: m.id,
+            name: m.name,
+            grade: m.grade as 'E' | 'D' | 'C' | 'B' | 'A' | 'S',
+            location: m.location,
+            icon: m.icon,
+            ability: m.ability,
+            abilityDesc: m.ability_desc ?? m.ability,
+            requiresPhoto: true,
+            exp: m.exp,
+            gold: m.gold,
+          })) ?? s.quest.rooms.find((r) => r.id === roomId)?.monsters ?? [];
+          return {
+            photoSession: {
+              roomId,
+              beforePhotoUrl: url,
+              beforePollution: scan?.pollution_level ?? s.quest.rooms.find((r) => r.id === roomId)?.pollutionLevel ?? 70,
+              afterCleanliness: 0,
+              monstersDetected: monsters,
+            },
+          };
+        }),
 
       setAfterPhoto: (roomId, url, cleanliness) =>
         set(s => ({

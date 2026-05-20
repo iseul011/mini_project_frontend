@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { fetchCleaningAiInfo } from '@/app/cleaning/api'
 
 export interface CleaningAiLabels {
   visionLabel: string
@@ -23,10 +24,9 @@ export function useCleaningAiLabels(): CleaningAiLabels {
 
   useEffect(() => {
     let cancelled = false
-    fetch('/api/v1/cleaning/ai-info', { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
+    fetchCleaningAiInfo()
       .then(data => {
-        if (cancelled || !data) return
+        if (cancelled) return
         setLabels({
           visionLabel: data.vision_label ?? '로컬 AI',
           chatLabel: data.chat_label ?? '로컬 AI',

@@ -1,0 +1,66 @@
+'use client';
+
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { AuthLoading } from '@/components/chungsora/AuthLoading';
+import { StatusBar } from '@/components/chungsora/StatusBar';
+import { resolveChildAuthRedirect } from '@/lib/chungsora/authRoutes';
+import { useAuthStore } from '@/lib/chungsora/authStore';
+import { useAuthHydrated } from '@/lib/chungsora/useAuthHydrated';
+import { setRole } from '@/lib/chungsora/role';
+import { useChildSessionHydrate } from '@/lib/chungsora/useChildSessionHydrate';
+import { ChildBottomNav } from './ChildBottomNav';
+
+const FLOW_PREFIXES = [
+  '/child/lock',
+  '/child/dirty',
+  '/child/after',
+  '/child/unlock',
+  '/child/pair',
+  '/child/quest/session',
+];
+
+export function ChildShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const hydrated = useAuthHydrated();
+  useChildSessionHydrate();
+  const childPaired = useAuthStore((s) => s.childPaired);
+  const hideNav = FLOW_PREFIXES.some((p) => pathname.startsWith(p));
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const redirect = resolveChildAuthRedirect(pathname, childPaired);
+    if (redirect) router.replace(redirect);
+  }, [hydrated, pathname, childPaired, router]);
+
+  useEffect(() => {
+    setRole('child');
+  }, []);
+
+  if (!hydrated) {
+    return <AuthLoading />;
+  }
+
+  const blocked = resolveChildAuthRedirect(pathname, childPaired);
+  if (blocked) {
+    return <AuthLoading />;
+  }
+
+  if (hideNav) {
+    return (
+      <div className="mx-auto min-h-dvh w-full max-w-lg bg-[#f7f9fa]">
+        <StatusBar />
+        {children}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col bg-[#f7f9fa]">
+      <StatusBar />
+      <main className="flex-1 pb-24">{children}</main>
+      <ChildBottomNav />
+    </div>
+  );
+}

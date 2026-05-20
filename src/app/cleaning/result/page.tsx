@@ -25,7 +25,7 @@ export default function BattleResultPage() {
       duration_seconds: 0,
       exp_gained: expGained,
       gold_gained: Math.floor(expGained / 3),
-    })
+    }).catch(() => undefined)
   }, [photoSession, quest.rooms])
 
   const baseExp = photoSession

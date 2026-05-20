@@ -1,28 +1,59 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --background: #f7f9fa;
+  --foreground: #2f3438;
+  --chungsora-point: #00b8cf;
   color-scheme: light only;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-point: #00b8cf;
+  --font-pretendard: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
-
-/* REMOVED: @media (prefers-color-scheme: dark) block
-   This was overriding text/background colors on mobile dark mode,
-   causing gray text (#ededed) on white background. */
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-pretendard);
+}
+
+.font-pretendard {
+  font-family: var(--font-pretendard);
+}
+
+/* 청소해라 — 토스/오늘의집 카드 */
+.ch-card {
+  border-radius: 16px;
+  border: 1px solid #eaedef;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.ch-btn-primary {
+  border-radius: 12px;
+  background: var(--chungsora-point);
+  color: #fff;
+  font-weight: 700;
+  transition: opacity 0.15s ease;
+}
+
+.ch-btn-primary:active {
+  opacity: 0.88;
+}
+
+.ch-btn-secondary {
+  border-radius: 12px;
+  border: 1px solid #eaedef;
+  background: #fff;
+  color: #2f3438;
+  font-weight: 600;
+}
+
+.safe-bottom {
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 
 /* Scrollbar hide utility (for Stories, highlights, etc.) */

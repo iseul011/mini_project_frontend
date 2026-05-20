@@ -33,9 +33,10 @@ export default function DungeonScanPage() {
       const result = await scanRoom(file, roomId, roomName)
       const used = result.model_label ? `${result.model_label} AI` : visionAi
       setScanMsg(`${used}가 마수를 탐지 중...`)
-      setBeforePhoto(roomId, url)
-      // AI 결과를 result 페이지에서 참조하기 위해 sessionStorage 저장
-      sessionStorage.setItem('ai-scan-result', JSON.stringify(result))
+      setBeforePhoto(roomId, url, {
+        monsters: result.monsters,
+        pollution_level: result.pollution_level,
+      })
       setScanMsg(`마수 ${result.monsters.length}마리 탐지 완료!`)
       setTimeout(() => {
         setScanning(false)
@@ -44,7 +45,6 @@ export default function DungeonScanPage() {
     } catch {
       setScanMsg('AI 연결 실패 — 기본 마수 소환 중...')
       setBeforePhoto(roomId, url)
-      sessionStorage.removeItem('ai-scan-result')
       setTimeout(() => {
         setScanning(false)
         router.push('/cleaning/scan/result')

@@ -49,6 +49,19 @@ export interface MemoryPayload {
   gold_gained: number
 }
 
+export interface CleaningAiInfo {
+  vision_label: string
+  chat_label: string
+  vision_model: string
+  chat_model: string
+}
+
+export async function fetchCleaningAiInfo(): Promise<CleaningAiInfo> {
+  const res = await fetch(`${BASE}/ai-info`, { credentials: 'include' })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
 export async function scanRoom(file: File, roomId: string, roomName: string): Promise<ScanResult> {
   const form = new FormData()
   form.append('file', file)
@@ -95,10 +108,11 @@ export async function coachChat(
 }
 
 export async function saveCleaningMemory(payload: MemoryPayload): Promise<void> {
-  await fetch(`${BASE}/memory`, {
+  const res = await fetch(`${BASE}/memory`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify(payload),
-  }).catch(() => {/* 기억 저장 실패는 조용히 무시 */})
+  })
+  if (!res.ok) throw new Error(await res.text())
 }

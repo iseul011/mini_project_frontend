@@ -986,7 +986,7 @@
         {% if not has_api_key %}
         <div class="api-warning">
             <i class="fa-solid fa-triangle-exclamation"></i>
-            <span><strong>환경 변수 경고:</strong> <code>GEMINI_API_KEY</code>가 설정되지 않았습니다. .env 파일에 키를 저장해야 정리 퀘스트 생성 및 AI 코치 채팅이 정상 동작합니다.</span>
+            <span><strong>백엔드 설정 경고:</strong> AI 기능은 서버(Gemini API)에서만 동작합니다. 백엔드 <code>GEMINI_API_KEY</code>를 확인하세요.</span>
         </div>
         {% endif %}
 
@@ -1029,7 +1029,7 @@
                     <div class="panel-title">
                         <div><i class="fa-solid fa-list-check"></i> 감지된 방 안의 오브젝트</div>
                     </div>
-                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">YOLO COCO 모델을 통해 실시간으로 감지된 정돈/분리배출 필요 아이템들입니다.</p>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px;">Gemini 비전으로 감지된 정돈/분리배출 필요 아이템들입니다.</p>
                     <div class="inventory-list" id="detectedInventory">
                         <!-- Dynamically filled with pills -->
                         <div style="color: var(--text-muted); font-size: 13px;"><i class="fa-solid fa-spinner fa-spin"></i> 로딩 중...</div>
