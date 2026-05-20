@@ -1,6 +1,24 @@
 // src/app/cleaning/api.ts
 const BASE = '/api/v1/cleaning'
 
+/** BFF `maxDuration` 120초 · upstream `UPSTREAM_MS` 110초 (슬롯 1회당) */
+export const CLEANING_AI_TIMEOUT_MS = 120_000
+
+async function postCleaningForm(path: string, form: FormData): Promise<Response> {
+  try {
+    return await fetch(`${BASE}/${path}`, {
+      method: 'POST',
+      body: form,
+      signal: AbortSignal.timeout(CLEANING_AI_TIMEOUT_MS),
+    })
+  } catch (e) {
+    if (e instanceof Error && e.name === 'TimeoutError') {
+      throw new Error('Gemini AI 응답 시간이 초과됐어요. 잠시 후 다시 시도해 주세요.')
+    }
+    throw e
+  }
+}
+
 export interface AiMonster {
   id: string
   name: string
@@ -75,7 +93,7 @@ export async function scanRoom(file: File, roomId: string, roomName: string): Pr
   form.append('file', file)
   form.append('room_id', roomId)
   form.append('room_name', roomName)
-  const res = await fetch(`${BASE}/scan`, { method: 'POST', body: form })
+  const res = await postCleaningForm('scan', form)
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }
@@ -85,7 +103,7 @@ export async function verifyRoom(file: File, roomId: string, roomName: string): 
   form.append('file', file)
   form.append('room_id', roomId)
   form.append('room_name', roomName)
-  const res = await fetch(`${BASE}/verify`, { method: 'POST', body: form })
+  const res = await postCleaningForm('verify', form)
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }
@@ -94,7 +112,7 @@ export async function evaluateBaselineSlot(file: File, slotLabel: string): Promi
   const form = new FormData()
   form.append('file', file)
   form.append('slot_label', slotLabel)
-  const res = await fetch(`${BASE}/baseline-eval`, { method: 'POST', body: form })
+  const res = await postCleaningForm('baseline-eval', form)
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }
@@ -108,7 +126,7 @@ export async function compareWithBaseline(
   form.append('baseline_file', baselineFile)
   form.append('after_file', afterFile)
   form.append('slot_label', slotLabel)
-  const res = await fetch(`${BASE}/compare-baseline`, { method: 'POST', body: form })
+  const res = await postCleaningForm('compare-baseline', form)
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }

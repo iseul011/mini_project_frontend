@@ -35,11 +35,14 @@ export function recordingStartSpeech(slotIndex: number): string {
   return `${label} 촬영을 시작합니다. ${ghostSlotConfig(slotIndex).ttsAlign}`;
 }
 
-/** 녹화 중 남은 초 — 10초·5초에만 한 번씩 안내 */
+/** 녹화 중 남은 초 — 5초 촬영 시 2초 남음만 안내 */
 export function recordingCountdownSpeech(secondsLeft: number): string | null {
-  if (secondsLeft === 10) return '10초 남았어요.';
-  if (secondsLeft === 5) return '5초 남았어요.';
+  if (secondsLeft === 2) return '2초 남았어요.';
   return null;
+}
+
+export function baselineEvaluatingSpeech(): string {
+  return '인공지능이 세 곳 기준을 검사해요. 슬롯당 최대 2분, 보통 30초 안쪽이에요.';
 }
 
 export function baselinePassSpeech(): string {

@@ -11,7 +11,11 @@ import {
   scanAllSlotCaptures,
 } from '@/lib/chungsora/captureSlots';
 import { padBaselineUrls, baselineSlotsReady } from '@/lib/chungsora/baselineUrls';
-import { CAPTURE_CAMERA_CONSTRAINTS, createCaptureRecorder } from '@/lib/chungsora/captureVideo';
+import {
+  CAPTURE_CAMERA_CONSTRAINTS,
+  CAPTURE_DURATION_SEC,
+  createCaptureRecorder,
+} from '@/lib/chungsora/captureVideo';
 import { toLogDateParam } from '@/lib/chungsora/logV2';
 import { useCleaningSessionStore, type QuestItem } from '@/lib/chungsora/cleaningSessionStore';
 import { AiModelAlert } from '@/components/chungsora/AiModelAlert';
@@ -28,6 +32,7 @@ import {
 import { AI_MODEL_ALERT_DEFAULT, isAiModelError } from '@/lib/chungsora/modelAlert';
 import {
   afterCompareSpeech,
+  baselineEvaluatingSpeech,
   baselinePassSpeech,
   captureModeIntro,
   coachHintFallback,
@@ -45,7 +50,7 @@ import { ghostSlotConfig, type GhostSlotIndex } from '@/lib/chungsora/ghostSlots
 import { useCoachSpeech } from '@/lib/chungsora/useCoachSpeech';
 
 const SLOTS = ['입구', '바닥', '책상'] as const;
-const CAPTURE_SEC = 20;
+const CAPTURE_SEC = CAPTURE_DURATION_SEC;
 
 type CaptureMode = 'dirty' | 'after' | 'baseline';
 type CaptureKind = 'video' | 'photo';
@@ -270,6 +275,8 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
     try {
       if (mode === 'baseline') {
         setPhase('scanning');
+        if (coachOn) speak(baselineEvaluatingSpeech());
+        else showSubtitle('Gemini AI 평가 중…');
         await evaluateAllBaselineSlots(captures, SLOTS);
         await ensureBaselineStored();
         await updateFamilyProfile({ baseline_verified: true });
@@ -448,7 +455,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
       </div>
 
       <p className="mt-2 text-sm text-white/70">
-        {slotsDone}/{SLOT_COUNT}곳 · {captureKind === 'video' ? '20초 영상' : '사진 1장'} × 3
+        {slotsDone}/{SLOT_COUNT}곳 · {captureKind === 'video' ? `${CAPTURE_SEC}초 영상` : '사진 1장'} × 3
         {mode === 'after' && !baselineSlotsReady(baselineUrls) && ' · ⚠ 부모 baseline 미등록'}
       </p>
 

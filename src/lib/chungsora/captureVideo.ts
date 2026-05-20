@@ -1,4 +1,7 @@
-/** 20초 × BFF 한도: Vercel 경유 업로드 ~4MB 이하 목표 */
+/** 슬롯당 녹화 길이(초) */
+export const CAPTURE_DURATION_SEC = 5;
+
+/** BFF 한도: Vercel 경유 업로드 ~4MB 이하 목표 */
 export const CAPTURE_VIDEO_BITS_PER_SECOND = 650_000;
 
 export const CAPTURE_CAMERA_CONSTRAINTS: MediaTrackConstraints = {
