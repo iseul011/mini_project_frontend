@@ -123,7 +123,7 @@ class _CleaningFlowScreenState extends State<CleaningFlowScreen> {
       if (res.passed) {
         final payout = PayoutCalc.calc(res.baseCleanWon, res.cleanliness, res.streakDays);
         final earnedP = payout.finalP.round().clamp(1, 10000);
-        await _pointsApi.earnPoints(earnedP, '청소 완료 · AI ${res.cleanliness}점');
+        await _pointsApi.earnPoints(earnedP.toDouble(), '청소 완료 · AI ${res.cleanliness}점');
         await widget.lockService.unlock();
       }
     } on OrchestratorException catch (e) {
