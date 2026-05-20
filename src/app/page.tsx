@@ -57,6 +57,12 @@ export default function EntryPage() {
         </ul>
 
         <footer className="mt-auto px-4 pb-8 text-center">
+          <Link
+            href="/download"
+            className="mb-3 block text-sm font-medium text-[#00B8CF] underline-offset-2 hover:underline"
+          >
+            자녀 Android 앱 APK 다운로드
+          </Link>
           <Link href="/hub" className="text-xs text-[#adb5bd] underline-offset-2 hover:text-[#828c94] hover:underline">
             개발용 · 미니 프로젝트 허브
           </Link>

@@ -1,0 +1,2 @@
+# CI가 app-release.apk를 생성하면 이 폴더에 저장됩니다.
+# version.json은 수동 placeholder — 첫 빌드 후 덮어씁니다.

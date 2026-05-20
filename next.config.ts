@@ -18,6 +18,9 @@ function loadBuildId(): string {
 const buildId = loadBuildId();
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: path.join(process.cwd()),
+  },
   env: {
     NEXT_PUBLIC_BUILD_ID: buildId,
   },
