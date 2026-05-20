@@ -13,10 +13,15 @@ export async function frameFromBaselineUrl(url: string): Promise<File> {
   return extractVideoFrame(videoFile);
 }
 
-export async function framesFromCaptures(captures: File[]): Promise<File[]> {
+export async function framesFromCaptures(captures: (File | null)[]): Promise<File[]> {
   const out: File[] = [];
-  for (const cap of captures) {
-    if (cap.type.startsWith('image/')) {
+  for (let i = 0; i < captures.length; i++) {
+    const cap = captures[i];
+    if (!cap || cap.size === 0) {
+      throw new Error(`슬롯 ${i + 1} 촬영이 없습니다. 다시 촬영해 주세요.`);
+    }
+    const mime = cap.type ?? '';
+    if (mime.startsWith('image/')) {
       out.push(cap);
     } else {
       out.push(await extractVideoFrame(cap));

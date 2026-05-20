@@ -11,11 +11,25 @@ function isGeminiResult(modelId?: string) {
   return !!modelId && modelId !== 'fallback';
 }
 
-export async function scanAllSlotCaptures(captures: File[], slotLabels: readonly string[]) {
+function assertCaptureFiles(captures: (File | null)[], label: string): File[] {
   if (captures.length !== SLOT_COUNT) {
-    throw new Error(`${SLOT_COUNT}개 슬롯 촬영이 모두 필요합니다.`);
+    throw new Error(`${SLOT_COUNT}개 ${label}이 모두 필요합니다.`);
   }
-  const frames = await framesFromCaptures(captures);
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    if (!captures[i] || captures[i]!.size === 0) {
+      throw new Error(`${slotLabelsFromIndex(i)} ${label}이 없습니다. 다시 촬영해 주세요.`);
+    }
+  }
+  return captures as File[];
+}
+
+function slotLabelsFromIndex(i: number): string {
+  return ['입구', '바닥', '책상'][i] ?? `슬롯 ${i + 1}`;
+}
+
+export async function scanAllSlotCaptures(captures: (File | null)[], slotLabels: readonly string[]) {
+  const files = assertCaptureFiles(captures, '슬롯 촬영');
+  const frames = await framesFromCaptures(files);
   const results = await Promise.all(
     frames.map((frame, i) => scanRoom(frame, 'room-1', `지민 방 · ${slotLabels[i]}`)),
   );
@@ -42,11 +56,9 @@ export async function scanAllSlotCaptures(captures: File[], slotLabels: readonly
   };
 }
 
-export async function evaluateAllBaselineSlots(captures: File[], slotLabels: readonly string[]) {
-  if (captures.length !== SLOT_COUNT) {
-    throw new Error(`${SLOT_COUNT}개 baseline 슬롯이 모두 필요합니다.`);
-  }
-  const frames = await framesFromCaptures(captures);
+export async function evaluateAllBaselineSlots(captures: (File | null)[], slotLabels: readonly string[]) {
+  const files = assertCaptureFiles(captures, 'baseline 촬영');
+  const frames = await framesFromCaptures(files);
   const results = await Promise.all(
     frames.map((frame, i) => evaluateBaselineSlot(frame, slotLabels[i])),
   );
@@ -67,13 +79,11 @@ export async function evaluateAllBaselineSlots(captures: File[], slotLabels: rea
 }
 
 export async function compareAllSlotsWithBaseline(
-  afterCaptures: File[],
+  afterCaptures: (File | null)[],
   baselineUrls: (string | null)[],
   slotLabels: readonly string[],
 ) {
-  if (afterCaptures.length !== SLOT_COUNT) {
-    throw new Error(`${SLOT_COUNT}개 after 슬롯이 모두 필요합니다.`);
-  }
+  const files = assertCaptureFiles(afterCaptures, 'after 촬영');
   for (let i = 0; i < SLOT_COUNT; i++) {
     if (!baselineUrls[i]) {
       throw new Error(
@@ -82,7 +92,7 @@ export async function compareAllSlotsWithBaseline(
     }
   }
 
-  const afterFrames = await framesFromCaptures(afterCaptures);
+  const afterFrames = await framesFromCaptures(files);
   const results = await Promise.all(
     afterFrames.map(async (afterFrame, i) => {
       const baselineFrame = await frameFromBaselineUrl(baselineUrls[i]!);

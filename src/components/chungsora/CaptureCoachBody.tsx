@@ -263,7 +263,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
     }
   };
 
-  const finalizeAllSlots = async (captures: File[]) => {
+  const finalizeAllSlots = async (captures: (File | null)[]) => {
     setError('');
     setProcessing(true);
 
@@ -339,7 +339,10 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
         return;
       }
 
-      await finalizeAllSlots(nextCaptures as File[]);
+      if (nextCaptures.some((c) => !c || c.size === 0)) {
+        throw new Error('3곳 촬영이 모두 필요합니다.');
+      }
+      await finalizeAllSlots(nextCaptures);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '저장에 실패했습니다.';
       showFailure(msg);
@@ -363,13 +366,18 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
     chunksRef.current = [];
     const recorder = createCaptureRecorder(stream);
     recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data);
+      if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
     };
     recorder.onstop = () => {
+      setRecording(false);
+      if (!chunksRef.current.length) {
+        showFailure('녹화된 영상이 없습니다. 다시 촬영해 주세요.');
+        return;
+      }
       const type = recorder.mimeType || 'video/webm';
       const blob = new Blob(chunksRef.current, { type });
       const ext = type.includes('mp4') ? 'mp4' : 'webm';
-      const file = new File([blob], `${SLOTS[slotIdx]}.${ext}`, { type });
+      const file = new File([blob], `${SLOTS[slotIdx]}.${ext}`, { type: type || 'video/webm' });
       void onSlotCaptured(file, slotIdx);
     };
     recorder.start(1000);
