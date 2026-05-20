@@ -56,29 +56,52 @@ function primeSpeechSynthesis(): void {
 export function useCoachSpeech(enabled: boolean) {
   const [subtitle, setSubtitle] = useState('');
   const enabledRef = useRef(enabled);
+  const activeRef = useRef(true);
   const delayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iosResumeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   enabledRef.current = enabled;
 
-  useEffect(() => {
-    primeSpeechSynthesis();
-    const onVoices = () => primeSpeechSynthesis();
-    window.speechSynthesis?.addEventListener('voiceschanged', onVoices);
-    return () => {
-      window.speechSynthesis?.removeEventListener('voiceschanged', onVoices);
-      if (delayRef.current) clearTimeout(delayRef.current);
-      if (iosResumeRef.current) clearTimeout(iosResumeRef.current);
-      stopCoachSpeech();
-    };
+  const clearPendingSpeak = useCallback(() => {
+    if (delayRef.current) clearTimeout(delayRef.current);
+    delayRef.current = null;
+    if (iosResumeRef.current) clearTimeout(iosResumeRef.current);
+    iosResumeRef.current = null;
   }, []);
 
+  useEffect(() => {
+    activeRef.current = true;
+    primeSpeechSynthesis();
+    const onVoices = () => primeSpeechSynthesis();
+    const onPageHide = () => {
+      clearPendingSpeak();
+      stopCoachSpeech();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') onPageHide();
+    };
+    window.speechSynthesis?.addEventListener('voiceschanged', onVoices);
+    window.addEventListener('pagehide', onPageHide);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      activeRef.current = false;
+      window.speechSynthesis?.removeEventListener('voiceschanged', onVoices);
+      window.removeEventListener('pagehide', onPageHide);
+      document.removeEventListener('visibilitychange', onVisibility);
+      clearPendingSpeak();
+      stopCoachSpeech();
+      setSubtitle('');
+    };
+  }, [clearPendingSpeak]);
+
   const runSpeak = useCallback((text: string) => {
+    if (!activeRef.current) return;
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
     stopCoachSpeech();
     if (iosResumeRef.current) clearTimeout(iosResumeRef.current);
     iosResumeRef.current = setTimeout(() => {
       iosResumeRef.current = null;
+      if (!activeRef.current) return;
       const u = utterance(text);
       window.speechSynthesis.speak(u);
     }, IOS_RESUME_MS);
@@ -86,19 +109,21 @@ export function useCoachSpeech(enabled: boolean) {
 
   const speak = useCallback(
     (text: string, options?: CoachSpeakOptions) => {
+      if (!activeRef.current) return;
       const trimmed = text.trim();
       if (!trimmed) return;
       setSubtitle(trimmed);
       if (options?.silent) return;
       if (!enabledRef.current && !options?.force) return;
 
-      if (delayRef.current) clearTimeout(delayRef.current);
+      clearPendingSpeak();
       delayRef.current = setTimeout(() => {
         delayRef.current = null;
+        if (!activeRef.current) return;
         runSpeak(trimmed);
       }, SPEAK_DELAY_MS);
     },
-    [runSpeak],
+    [runSpeak, clearPendingSpeak],
   );
 
   const showSubtitle = useCallback((text: string) => {
@@ -108,5 +133,11 @@ export function useCoachSpeech(enabled: boolean) {
 
   const clearSubtitle = useCallback(() => setSubtitle(''), []);
 
-  return { subtitle, speak, showSubtitle, clearSubtitle, stop: stopCoachSpeech };
+  const stop = useCallback(() => {
+    clearPendingSpeak();
+    stopCoachSpeech();
+    setSubtitle('');
+  }, [clearPendingSpeak]);
+
+  return { subtitle, speak, showSubtitle, clearSubtitle, stop };
 }

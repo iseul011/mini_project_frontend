@@ -83,6 +83,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownSpokenRef = useRef<Set<number>>(new Set());
   const ghostReadySpokenRef = useRef<Set<number>>(new Set());
+  const mountedRef = useRef(true);
 
   const [slotIdx, setSlotIdx] = useState(0);
   const [slotCaptures, setSlotCaptures] = useState<(File | null)[]>(emptySlots);
@@ -132,6 +133,14 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   }, []);
 
   const { subtitle, speak, showSubtitle, stop: stopCoach } = useCoachSpeech(coachOn);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      stopCoach();
+    };
+  }, [stopCoach]);
 
   const showFailure = useCallback(
     (msg: string) => {
@@ -269,6 +278,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   };
 
   const finalizeAllSlots = async (captures: (File | null)[]) => {
+    if (!mountedRef.current) return;
     setError('');
     setProcessing(true);
 
@@ -278,8 +288,11 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
         if (coachOn) speak(baselineEvaluatingSpeech());
         else showSubtitle('Gemini AI 평가 중…');
         await evaluateAllBaselineSlots(captures, SLOTS);
+        if (!mountedRef.current) return;
         await ensureBaselineStored();
+        if (!mountedRef.current) return;
         await updateFamilyProfile({ baseline_verified: true });
+        if (!mountedRef.current) return;
         if (coachOn) speak(baselinePassSpeech());
         else showSubtitle(baselinePassSpeech());
         if (nextHref) router.push(nextHref);
@@ -290,6 +303,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
       if (mode === 'dirty') {
         setPhase('scanning');
         const res = await scanAllSlotCaptures(captures, SLOTS);
+        if (!mountedRef.current) return;
         setScanResult(monstersToQuest(res.monsters), res.pollution, res.summary);
         if (coachOn) speak(dirtyScanDoneSpeech());
         else showSubtitle(dirtyScanDoneSpeech());
@@ -302,6 +316,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
       let urlsForCompare = baselineUrls;
       if (!baselineSlotsReady(baselineUrls)) {
         const loaded = await loadBaselineUrls();
+        if (!mountedRef.current) return;
         urlsForCompare = loaded.urls;
         if (!baselineSlotsReady(urlsForCompare)) {
           throw new Error('부모 baseline 3곳·AI 평가가 완료되지 않았습니다.');
@@ -309,18 +324,22 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
         setBaselineUrls(urlsForCompare);
       }
       const res = await compareAllSlotsWithBaseline(captures, urlsForCompare, SLOTS);
+      if (!mountedRef.current) return;
       setVerifyResult(res.cleanliness, res.comment);
       await patchLogMeta(todayKey, { score: res.cleanliness, streak_days: streakDays });
+      if (!mountedRef.current) return;
       const afterMsg = afterCompareSpeech(res.cleanliness);
       if (coachOn) speak(afterMsg);
       else showSubtitle(afterMsg);
       if (nextHref) router.push(nextHref);
       else onComplete?.();
     } catch (e) {
+      if (!mountedRef.current) return;
       const msg = e instanceof Error ? e.message : 'AI 평가에 실패했습니다.';
       if (mode === 'baseline') resetCaptures();
       showFailure(msg);
     } finally {
+      if (!mountedRef.current) return;
       setProcessing(false);
       setRecording(false);
       setTimer(CAPTURE_SEC);
@@ -328,6 +347,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   };
 
   const onSlotCaptured = async (file: File, index: number) => {
+    if (!mountedRef.current) return;
     setError('');
     setProcessing(true);
     try {
@@ -339,6 +359,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
       setSlotCaptures(nextCaptures);
 
       if (index < SLOT_COUNT - 1) {
+        if (!mountedRef.current) return;
         const next = index + 1;
         setGhostAligned(false);
         goToSlot(next);
@@ -351,9 +372,11 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
       }
       await finalizeAllSlots(nextCaptures);
     } catch (e) {
+      if (!mountedRef.current) return;
       const msg = e instanceof Error ? e.message : '저장에 실패했습니다.';
       showFailure(msg);
     } finally {
+      if (!mountedRef.current) return;
       setProcessing(false);
       setRecording(false);
       setTimer(CAPTURE_SEC);
