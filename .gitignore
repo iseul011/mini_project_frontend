@@ -4,6 +4,7 @@ node_modules/
 out/
 .env
 .env.*
+.env.build
 !.env.example
 .env.local
 .vercel

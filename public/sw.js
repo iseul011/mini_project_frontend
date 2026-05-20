@@ -1,5 +1,6 @@
-/** 정적 아이콘만 캐시. HTML·/_next/ JS는 캐시하지 않음 (구버전 20초 녹화 번들 방지). */
-const CACHE = 'chungsora-static-v3';
+/* build: __BUILD_ID__ */
+/** 아이콘만 캐시. 앱 JS/HTML은 네트워크 우선 — 배포 시 사용자 캐시 삭제 불필요 */
+const CACHE = 'chungsora-static-v4';
 const PRECACHE = ['/manifest.json'];
 
 function shouldBypassCache(url, request) {
@@ -23,6 +24,12 @@ self.addEventListener('activate', (event) => {
       .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
