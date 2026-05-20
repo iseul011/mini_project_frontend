@@ -2,14 +2,22 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useCleaningSessionStore } from '@/lib/chungsora/cleaningSessionStore';
 
 export default function ChildQuestSessionPage() {
   const router = useRouter();
   const questItems = useCleaningSessionStore((s) => s.questItems);
   const scanSummary = useCleaningSessionStore((s) => s.scanSummary);
+  const hasScanResult = useCleaningSessionStore((s) => s.hasScanResult);
   const toggleQuestItem = useCleaningSessionStore((s) => s.toggleQuestItem);
   const allQuestDone = useCleaningSessionStore((s) => s.allQuestDone);
+
+  useEffect(() => {
+    if (!hasScanResult || questItems.length === 0) {
+      router.replace('/child/dirty');
+    }
+  }, [hasScanResult, questItems.length, router]);
 
   const done = allQuestDone();
 

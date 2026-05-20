@@ -14,6 +14,7 @@ export type FamilySummary = {
   today_score: number;
   baseline_url: string | null;
   baseline_urls: string[];
+  baseline_verified: boolean;
 };
 
 export async function fetchFamilySummary() {

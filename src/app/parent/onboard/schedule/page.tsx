@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { PassScoreControl } from '@/components/chungsora/PassScoreControl';
-import { updateLockPolicy, updateFamilyProfile } from '@/lib/chungsora/clientApi';
+import { updateLockPolicy, updateFamilyProfile, fetchFamilySummary } from '@/lib/chungsora/clientApi';
+import { baselineSlotsReady, padBaselineUrls } from '@/lib/chungsora/baselineUrls';
 import { useAuthStore } from '@/lib/chungsora/authStore';
 import { useSettingsStore } from '@/lib/chungsora/settingsStore';
 
@@ -16,6 +18,21 @@ export default function ParentSchedulePage() {
   const setLockTime = useSettingsStore((s) => s.setLockTime);
   const setLockDays = useSettingsStore((s) => s.setLockDays);
   const setPassScore = useSettingsStore((s) => s.setPassScore);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    void fetchFamilySummary()
+      .then((s) => {
+        const urls = padBaselineUrls(s.baseline_urls, s.baseline_url);
+        const ready = baselineSlotsReady(urls) && !!s.baseline_verified;
+        if (!ready) {
+          router.replace('/parent/onboard/baseline');
+          return;
+        }
+        setChecking(false);
+      })
+      .catch(() => router.replace('/parent/onboard/baseline'));
+  }, [router]);
 
   const finish = () => {
     setOnboardDone(true);
@@ -28,13 +45,21 @@ export default function ParentSchedulePage() {
     router.push('/parent/onboard/flow');
   };
 
+  if (checking) {
+    return (
+      <div className="mx-auto flex min-h-dvh max-w-lg items-center justify-center px-5">
+        <p className="text-sm text-[#828c94]">baseline AI 평가 확인 중…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-5 py-10">
       <Link href="/parent/onboard/baseline" className="text-xs font-semibold text-[#00b8cf]">
-        ← 뒤로
+        ← baseline 다시 촬영
       </Link>
       <h1 className="mt-4 text-[26px] font-bold text-[#2f3438]">청소 시간 · 합격점</h1>
-      <p className="mt-2 text-sm text-[#828c94]">잠금 시간과 AI 합격 점수를 설정해요</p>
+      <p className="mt-2 text-sm text-[#828c94]">baseline AI 합격 후 잠금 시간과 합격 점수를 설정해요</p>
 
       <div className="ch-card mt-8 space-y-6 p-5">
         <div>

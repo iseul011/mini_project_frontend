@@ -68,14 +68,18 @@ export async function evaluateAllBaselineSlots(captures: File[], slotLabels: rea
 
 export async function compareAllSlotsWithBaseline(
   afterCaptures: File[],
-  baselineUrls: string[],
+  baselineUrls: (string | null)[],
   slotLabels: readonly string[],
 ) {
   if (afterCaptures.length !== SLOT_COUNT) {
     throw new Error(`${SLOT_COUNT}개 after 슬롯이 모두 필요합니다.`);
   }
-  if (baselineUrls.filter(Boolean).length < SLOT_COUNT) {
-    throw new Error('부모 baseline 3곳이 등록되지 않았습니다. 부모가 baseline 촬영을 완료해야 해요.');
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    if (!baselineUrls[i]) {
+      throw new Error(
+        `부모 baseline ${slotLabels[i]}(${i + 1}/${SLOT_COUNT})가 등록되지 않았습니다. 부모가 baseline 촬영·AI 평가를 완료해야 해요.`,
+      );
+    }
   }
 
   const afterFrames = await framesFromCaptures(afterCaptures);

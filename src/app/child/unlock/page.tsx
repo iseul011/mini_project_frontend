@@ -22,6 +22,12 @@ export default function ChildUnlockPage() {
   const payout = calcCleaningPayout(baseCleanWon, score || 0, streakDays);
 
   useEffect(() => {
+    if (cleanliness <= 0) {
+      router.replace('/child/after');
+    }
+  }, [cleanliness, router]);
+
+  useEffect(() => {
     if (!passed) return;
     void earnPoints(payout.finalP, `청소 완료 · AI ${score}점`).catch(() => undefined);
   }, [passed, payout.finalP, score]);

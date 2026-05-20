@@ -3,14 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { coachChat } from '@/app/cleaning/api';
-import { resolveLogPhotoUrl } from '@/lib/api/resolveLogPhotoUrl';
-import { fetchFamilySummary, patchLogMeta, uploadLogPhoto } from '@/lib/chungsora/clientApi';
+import { fetchFamilySummary, patchLogMeta, uploadLogPhoto, updateFamilyProfile } from '@/lib/chungsora/clientApi';
 import {
   SLOT_COUNT,
   compareAllSlotsWithBaseline,
   evaluateAllBaselineSlots,
   scanAllSlotCaptures,
 } from '@/lib/chungsora/captureSlots';
+import { padBaselineUrls, baselineSlotsReady } from '@/lib/chungsora/baselineUrls';
 import { pickRecorderMime } from '@/lib/chungsora/captureVideo';
 import { toLogDateParam } from '@/lib/chungsora/logV2';
 import { useCleaningSessionStore, type QuestItem } from '@/lib/chungsora/cleaningSessionStore';
@@ -55,7 +55,8 @@ function GhostGuideLines() {
 }
 
 function GhostOverlay({ url }: { url: string }) {
-  const isVideo = /\.(mp4|webm|mov)(\?|$)/i.test(url);
+  const isVideo =
+    /\.(mp4|webm|mov)(\?|$)/i.test(url) || /_(?:0|1|2)\.(mp4|webm)/i.test(url) || /baseline_\d+\.(mp4|webm)/i.test(url);
   if (isVideo) {
     return (
       <video
@@ -113,9 +114,22 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
 
   const todayKey = toLogDateParam(new Date());
   const ghostUrl = mode !== 'baseline' ? baselineUrls[slotIdx] : null;
-  const showGhost = !!ghostUrl;
+  const showGhostMedia = mode !== 'baseline' && !!ghostUrl;
   const slotsDone = slotCaptures.filter(Boolean).length;
   const allSlotsDone = slotsDone === SLOT_COUNT;
+  const photoFallbackOnly = !!cameraError;
+
+  const loadBaselineUrls = useCallback(async () => {
+    const s = await fetchFamilySummary();
+    const padded = padBaselineUrls(s.baseline_urls, s.baseline_url);
+    setBaselineUrls(padded);
+    return { summary: s, urls: padded };
+  }, []);
+
+  const resetCaptures = useCallback(() => {
+    setSlotCaptures(emptySlots());
+    setSlotIdx(0);
+  }, []);
 
   const speak = useCallback((text: string) => {
     setSubtitle(text);
@@ -139,19 +153,8 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   );
 
   useEffect(() => {
-    void fetchFamilySummary()
-      .then((s) => {
-        const urls = (s.baseline_urls?.length ? s.baseline_urls : s.baseline_url ? [s.baseline_url] : [])
-          .map((u) => resolveLogPhotoUrl(u))
-          .filter(Boolean) as string[];
-        const padded: (string | null)[] = [null, null, null];
-        urls.forEach((u, i) => {
-          padded[i] = u;
-        });
-        setBaselineUrls(padded);
-      })
-      .catch(() => undefined);
-  }, []);
+    void loadBaselineUrls().catch(() => undefined);
+  }, [loadBaselineUrls]);
 
   useEffect(() => {
     if (captureKind !== 'video') return;
@@ -214,10 +217,13 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
     phase: 'before' | 'after' | 'baseline',
     slot: number,
   ) => {
-    try {
-      await uploadLogPhoto(todayKey, phase, file, slot);
-    } catch {
-      /* 업로드 실패해도 AI 평가는 계속 */
+    await uploadLogPhoto(todayKey, phase, file, slot);
+  };
+
+  const ensureBaselineStored = async () => {
+    const { urls } = await loadBaselineUrls();
+    if (!baselineSlotsReady(urls)) {
+      throw new Error('baseline 3곳 업로드가 확인되지 않았습니다. 다시 촬영해 주세요.');
     }
   };
 
@@ -229,6 +235,8 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
       if (mode === 'baseline') {
         setPhase('scanning');
         await evaluateAllBaselineSlots(captures, SLOTS);
+        await ensureBaselineStored();
+        await updateFamilyProfile({ baseline_verified: true });
         if (coachOn) speak('baseline 3곳 AI 합격! 이제 청소 시간을 설정해요.');
         if (nextHref) router.push(nextHref);
         else onComplete?.();
@@ -246,8 +254,16 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
       }
 
       setPhase('verifying');
-      const urls = baselineUrls.filter(Boolean) as string[];
-      const res = await compareAllSlotsWithBaseline(captures, urls, SLOTS);
+      let urlsForCompare = baselineUrls;
+      if (!baselineSlotsReady(baselineUrls)) {
+        const loaded = await loadBaselineUrls();
+        urlsForCompare = loaded.urls;
+        if (!baselineSlotsReady(urlsForCompare)) {
+          throw new Error('부모 baseline 3곳·AI 평가가 완료되지 않았습니다.');
+        }
+        setBaselineUrls(urlsForCompare);
+      }
+      const res = await compareAllSlotsWithBaseline(captures, urlsForCompare, SLOTS);
       setVerifyResult(res.cleanliness, res.comment);
       await patchLogMeta(todayKey, { score: res.cleanliness, streak_days: streakDays });
       if (coachOn) speak(`Gemini baseline 비교 ${res.cleanliness}점!`);
@@ -255,6 +271,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
       else onComplete?.();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'AI 평가에 실패했습니다.';
+      if (mode === 'baseline') resetCaptures();
       showFailure(msg);
     } finally {
       setProcessing(false);
@@ -368,19 +385,21 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
           >
             영상
           </button>
-          <button
-            type="button"
-            onClick={() => setCaptureKind('photo')}
-            className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${captureKind === 'photo' ? 'bg-[#00b8cf] text-white' : 'bg-white/15'}`}
-          >
-            사진3장
-          </button>
+          {photoFallbackOnly && (
+            <button
+              type="button"
+              onClick={() => setCaptureKind('photo')}
+              className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${captureKind === 'photo' ? 'bg-[#00b8cf] text-white' : 'bg-white/15'}`}
+            >
+              사진3장
+            </button>
+          )}
         </div>
       </div>
 
       <p className="mt-2 text-sm text-white/70">
         {slotsDone}/{SLOT_COUNT}곳 · {captureKind === 'video' ? '20초 영상' : '사진 1장'} × 3
-        {mode === 'after' && !baselineUrls[0] && ' · ⚠ 부모 baseline 미등록'}
+        {mode === 'after' && !baselineSlotsReady(baselineUrls) && ' · ⚠ 부모 baseline 미등록'}
       </p>
 
       {error && (
@@ -401,13 +420,8 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
             카메라 준비 중…
           </div>
         )}
-        {showGhost && ghostUrl && (
-          <>
-            <GhostOverlay url={ghostUrl} />
-            <GhostGuideLines />
-          </>
-        )}
-        {!showGhost && mode !== 'baseline' && <GhostGuideLines />}
+        {showGhostMedia && ghostUrl && <GhostOverlay url={ghostUrl} />}
+        <GhostGuideLines />
         {recording && (
           <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-[#f04452] px-2.5 py-1 text-[10px] font-bold">
             <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
@@ -415,7 +429,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
           </div>
         )}
         <div className="absolute left-3 top-3 rounded-full bg-black/60 px-2 py-1 text-[10px] font-bold text-[#00b8cf]">
-          {showGhost ? `👻 ${SLOTS[slotIdx]}` : SLOTS[slotIdx]}
+          {showGhostMedia ? `👻 ${SLOTS[slotIdx]}` : SLOTS[slotIdx]}
         </div>
         <div className="absolute bottom-3 left-3 right-3 rounded-xl bg-black/55 px-3 py-2 text-xs">
           {subtitle || '코치 자막'}
