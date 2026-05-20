@@ -34,12 +34,20 @@ jobs:
       - name: Flutter 프로젝트 확인
         run: test -d mini_flutter || (echo "::error::mini_flutter/ 폴더가 repo 루트에 필요합니다" && exit 1)
 
-      - name: Android 스캐폴드 보완 (gradlew 등)
-        working-directory: mini_flutter
-        run: flutter create . --platforms=android --org com.chungsora --project-name chungsora_child
-
-      - name: Gradle wrapper 실행 권한
-        run: chmod +x mini_flutter/android/gradlew
+      - name: Android Gradle · wrapper 동기화 (Flutter stable)
+        run: |
+          set -e
+          flutter create /tmp/chungsora_ref --org com.chungsora --project-name chungsora_ref --platforms android
+          REF=/tmp/chungsora_ref/android
+          DST=mini_flutter/android
+          cp "$REF/settings.gradle.kts" "$DST/settings.gradle.kts"
+          cp "$REF/gradle/wrapper/"* "$DST/gradle/wrapper/"
+          cp "$REF/gradlew" "$DST/gradlew"
+          cp "$REF/gradlew.bat" "$DST/gradlew.bat"
+          cp "$REF/build.gradle.kts" "$DST/build.gradle.kts"
+          cp "$REF/gradle.properties" "$DST/gradle.properties"
+          chmod +x "$DST/gradlew"
+          flutter --version
 
       - working-directory: mini_flutter
         run: flutter pub get
@@ -49,9 +57,18 @@ jobs:
         run: |
           set -o pipefail
           flutter build apk --release 2>&1 | tee ../build-apk.log
-          tail -n 60 ../build-apk.log
+          tail -n 80 ../build-apk.log
 
       - name: 빌드 로그 (실패 시)
+        if: failure()
+        run: |
+          echo "## Flutter APK build failed" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          tail -n 120 build-apk.log >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+        working-directory: .
+
+      - name: 빌드 로그 artifact (실패 시)
         if: failure()
         uses: actions/upload-artifact@v4
         with:
