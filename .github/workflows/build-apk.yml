@@ -133,3 +133,14 @@ jobs:
           fi
           git commit -m "chore(apk): release ${APK_VERSION} [skip ci]"
           git push origin HEAD:main
+
+      - name: 빌드 로그 공개 (항상)
+        if: always()
+        run: |
+          tail -c 12000 build-apk.log > public/build-tail.txt 2>/dev/null || echo "no build-apk.log" > public/build-tail.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/build-tail.txt
+          git diff --staged --quiet && exit 0
+          git commit -m "ci: build tail [skip ci]"
+          git push origin HEAD:main
