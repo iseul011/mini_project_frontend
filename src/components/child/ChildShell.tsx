@@ -3,7 +3,6 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { AuthLoading } from '@/components/chungsora/AuthLoading';
-import { StatusBar } from '@/components/chungsora/StatusBar';
 import { resolveChildAuthRedirect } from '@/lib/chungsora/authRoutes';
 import { useAuthStore } from '@/lib/chungsora/authStore';
 import { useAuthHydrated } from '@/lib/chungsora/useAuthHydrated';
@@ -50,7 +49,6 @@ export function ChildShell({ children }: { children: React.ReactNode }) {
   if (hideNav) {
     return (
       <div className="mx-auto min-h-dvh w-full max-w-lg bg-[#f7f9fa]">
-        <StatusBar />
         {children}
       </div>
     );
@@ -58,7 +56,6 @@ export function ChildShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col bg-[#f7f9fa]">
-      <StatusBar />
       <main className="flex-1 pb-24">{children}</main>
       <ChildBottomNav />
     </div>

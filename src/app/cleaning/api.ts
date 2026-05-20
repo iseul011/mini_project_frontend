@@ -28,6 +28,14 @@ export interface VerifyResult {
   model_label?: string
 }
 
+export type BaselineEvalResult = {
+  quality_score: number
+  acceptable: boolean
+  comment: string
+  model_id?: string
+  model_label?: string
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
@@ -78,6 +86,29 @@ export async function verifyRoom(file: File, roomId: string, roomName: string): 
   form.append('room_id', roomId)
   form.append('room_name', roomName)
   const res = await fetch(`${BASE}/verify`, { method: 'POST', body: form })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function evaluateBaselineSlot(file: File, slotLabel: string): Promise<BaselineEvalResult> {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('slot_label', slotLabel)
+  const res = await fetch(`${BASE}/baseline-eval`, { method: 'POST', body: form })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+export async function compareWithBaseline(
+  baselineFile: File,
+  afterFile: File,
+  slotLabel: string,
+): Promise<VerifyResult> {
+  const form = new FormData()
+  form.append('baseline_file', baselineFile)
+  form.append('after_file', afterFile)
+  form.append('slot_label', slotLabel)
+  const res = await fetch(`${BASE}/compare-baseline`, { method: 'POST', body: form })
   if (!res.ok) throw new Error(await res.text())
   return res.json()
 }

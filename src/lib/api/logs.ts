@@ -67,11 +67,14 @@ export async function uploadLogPhoto(
   date: string,
   phase: 'before' | 'after' | 'baseline',
   file: File | Blob,
+  slot?: number,
 ) {
+  const qs = new URLSearchParams({ phase });
+  if (slot !== undefined) qs.set('slot', String(slot));
   const form = new FormData();
   form.append('file', file);
   return fetchJson<UploadLogPhotoResponse>(
-    `${BASE}/${encodeURIComponent(date)}/photos?phase=${phase}`,
+    `${BASE}/${encodeURIComponent(date)}/photos?${qs.toString()}`,
     { method: 'POST', headers: authHeaders(), body: form },
   );
 }

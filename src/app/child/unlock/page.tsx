@@ -17,9 +17,9 @@ export default function ChildUnlockPage() {
   const baseCleanWon = useSettingsStore((s) => s.baseCleanWon);
   const passScore = useSettingsStore((s) => s.passScore);
 
-  const score = cleanliness || 88;
-  const payout = calcCleaningPayout(baseCleanWon, score, streakDays);
-  const passed = score >= passScore;
+  const score = cleanliness;
+  const passed = score > 0 && score >= passScore;
+  const payout = calcCleaningPayout(baseCleanWon, score || 0, streakDays);
 
   useEffect(() => {
     if (!passed) return;
@@ -35,7 +35,7 @@ export default function ChildUnlockPage() {
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col items-center justify-center bg-[#f7f9fa] px-6 py-10 text-center">
       <p className="text-5xl">{passed ? '🔓' : '⏳'}</p>
       <h1 className="mt-4 text-2xl font-bold text-[#2f3438]">
-        {passed ? '잠금 해제!' : '점수 미달'}
+        {passed ? '잠금 해제!' : score <= 0 ? 'AI 채점 필요' : '점수 미달'}
       </h1>
       <p className="mt-2 text-sm text-[#828c94]">{verifyComment || 'AI 검증 완료'}</p>
 

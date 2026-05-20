@@ -12,6 +12,8 @@ export type FamilySummary = {
   pass_score: number;
   onboard_done: boolean;
   today_score: number;
+  baseline_url: string | null;
+  baseline_urls: string[];
 };
 
 export async function fetchFamilySummary() {

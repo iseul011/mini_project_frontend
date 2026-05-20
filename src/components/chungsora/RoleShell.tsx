@@ -1,7 +1,6 @@
 'use client';
 
 import { AuthLoading } from '@/components/chungsora/AuthLoading';
-import { StatusBar } from '@/components/chungsora/StatusBar';
 import { ParentShell } from '@/components/parent/ParentShell';
 import { ChildShell } from '@/components/child/ChildShell';
 import { useChungsoraRole } from '@/lib/chungsora/useChungsoraRole';
@@ -23,7 +22,6 @@ export function RoleShell({
     if (childHideNav) {
       return (
         <div className="mx-auto min-h-dvh w-full max-w-lg bg-[#f7f9fa]">
-          <StatusBar />
           {children}
         </div>
       );

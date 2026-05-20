@@ -9,8 +9,9 @@ type Ctx = { params: Promise<{ date: string }> };
 export async function POST(req: NextRequest, ctx: Ctx) {
   const { date } = await ctx.params;
   const phase = req.nextUrl.searchParams.get('phase');
-  if (phase !== 'before' && phase !== 'after') {
-    return NextResponse.json({ error: 'phase=before|after 필요' }, { status: 400 });
+  const slot = req.nextUrl.searchParams.get('slot');
+  if (phase !== 'before' && phase !== 'after' && phase !== 'baseline') {
+    return NextResponse.json({ error: 'phase=before|after|baseline 필요' }, { status: 400 });
   }
 
   try {
@@ -21,10 +22,13 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     }
 
     const upstream = new FormData();
-    upstream.append('file', file, 'photo.jpg');
+    upstream.append('file', file, 'capture.bin');
+
+    const qs = new URLSearchParams({ phase });
+    if (slot !== null && slot !== '') qs.set('slot', slot);
 
     const res = await fetch(
-      `${upstreamUrl(`/logs/${encodeURIComponent(date)}/photos`)}?phase=${phase}`,
+      `${upstreamUrl(`/logs/${encodeURIComponent(date)}/photos`)}?${qs.toString()}`,
       {
         method: 'POST',
         headers: upstreamAuthHeaders(req),
