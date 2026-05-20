@@ -15,7 +15,35 @@ import { pickRecorderMime } from '@/lib/chungsora/captureVideo';
 import { toLogDateParam } from '@/lib/chungsora/logV2';
 import { useCleaningSessionStore, type QuestItem } from '@/lib/chungsora/cleaningSessionStore';
 import { AiModelAlert } from '@/components/chungsora/AiModelAlert';
+import { CoachSubtitle } from '@/components/chungsora/CoachSubtitle';
+import {
+  GhostAlignmentBar,
+  GhostBaselineMedia,
+  GhostBaselineMissingHint,
+  GhostBaselineUnavailable,
+  GhostBottomCue,
+  GhostSlotBadge,
+  GhostSlotGuide,
+  useGhostMediaStatus,
+} from '@/components/chungsora/GhostOverlay';
 import { AI_MODEL_ALERT_DEFAULT, isAiModelError } from '@/lib/chungsora/modelAlert';
+import {
+  afterCompareSpeech,
+  baselinePassSpeech,
+  captureModeIntro,
+  coachHintFallback,
+  coachPausedSpeech,
+  coachResumedSpeech,
+  dirtyScanDoneSpeech,
+  recordingCountdownSpeech,
+  recordingStartSpeech,
+  slotBaselineMissing,
+  slotAlignSpeech,
+  slotTransitionSpeech,
+  subtitlePlaceholder,
+} from '@/lib/chungsora/coachCopy';
+import { ghostSlotConfig, type GhostSlotIndex } from '@/lib/chungsora/ghostSlots';
+import { useCoachSpeech } from '@/lib/chungsora/useCoachSpeech';
 
 const SLOTS = ['입구', '바닥', '책상'] as const;
 const CAPTURE_SEC = 20;
@@ -37,48 +65,6 @@ function monstersToQuest(monsters: { name: string }[]): QuestItem[] {
   }));
 }
 
-function GhostGuideLines() {
-  return (
-    <div className="pointer-events-none absolute inset-0" aria-hidden>
-      <div className="absolute inset-4 rounded-xl border-2 border-dashed border-[#00b8cf]/90" />
-      <div className="absolute left-1/3 top-4 bottom-4 w-px bg-[#00b8cf]/55" />
-      <div className="absolute left-2/3 top-4 bottom-4 w-px bg-[#00b8cf]/55" />
-      <div className="absolute top-1/3 left-4 right-4 h-px bg-[#00b8cf]/55" />
-      <div className="absolute top-2/3 left-4 right-4 h-px bg-[#00b8cf]/55" />
-      <div className="absolute left-4 top-4 h-8 w-8 border-l-[3px] border-t-[3px] border-[#00b8cf]" />
-      <div className="absolute right-4 top-4 h-8 w-8 border-r-[3px] border-t-[3px] border-[#00b8cf]" />
-      <div className="absolute bottom-4 left-4 h-8 w-8 border-b-[3px] border-l-[3px] border-[#00b8cf]" />
-      <div className="absolute bottom-4 right-4 h-8 w-8 border-b-[3px] border-r-[3px] border-[#00b8cf]" />
-      <div className="absolute left-1/2 top-1/2 h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#00b8cf]/70" />
-    </div>
-  );
-}
-
-function GhostOverlay({ url }: { url: string }) {
-  const isVideo =
-    /\.(mp4|webm|mov)(\?|$)/i.test(url) || /_(?:0|1|2)\.(mp4|webm)/i.test(url) || /baseline_\d+\.(mp4|webm)/i.test(url);
-  if (isVideo) {
-    return (
-      <video
-        src={url}
-        muted
-        playsInline
-        autoPlay
-        loop
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40"
-      />
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={url}
-      alt=""
-      className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-40 mix-blend-screen"
-    />
-  );
-}
-
 function emptySlots(): (File | null)[] {
   return Array.from({ length: SLOT_COUNT }, () => null);
 }
@@ -91,13 +77,14 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const countdownSpokenRef = useRef<Set<number>>(new Set());
+  const ghostReadySpokenRef = useRef<Set<number>>(new Set());
 
   const [slotIdx, setSlotIdx] = useState(0);
   const [slotCaptures, setSlotCaptures] = useState<(File | null)[]>(emptySlots);
   const [baselineUrls, setBaselineUrls] = useState<(string | null)[]>([null, null, null]);
   const [captureKind, setCaptureKind] = useState<CaptureKind>('video');
   const [coachOn, setCoachOn] = useState(true);
-  const [subtitle, setSubtitle] = useState('');
   const [error, setError] = useState('');
   const [alertOpen, setAlertOpen] = useState(false);
   const [alertMessage, setAlertMessage] = useState('');
@@ -106,6 +93,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const [timer, setTimer] = useState(CAPTURE_SEC);
+  const [ghostAligned, setGhostAligned] = useState(false);
 
   const setScanResult = useCleaningSessionStore((s) => s.setScanResult);
   const setVerifyResult = useCleaningSessionStore((s) => s.setVerifyResult);
@@ -114,7 +102,12 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
 
   const todayKey = toLogDateParam(new Date());
   const ghostUrl = mode !== 'baseline' ? baselineUrls[slotIdx] : null;
-  const showGhostMedia = mode !== 'baseline' && !!ghostUrl;
+  const ghostSlot = slotIdx as GhostSlotIndex;
+  const ghostMedia = useGhostMediaStatus(ghostUrl);
+  const showGhostMedia =
+    mode !== 'baseline' && !!ghostUrl && ghostMedia.status === 'ready';
+  const ghostMediaBroken = mode !== 'baseline' && !!ghostUrl && ghostMedia.status === 'error';
+  const ghostMediaMissing = mode !== 'baseline' && !ghostUrl;
   const slotsDone = slotCaptures.filter(Boolean).length;
   const allSlotsDone = slotsDone === SLOT_COUNT;
   const photoFallbackOnly = !!cameraError;
@@ -131,14 +124,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
     setSlotIdx(0);
   }, []);
 
-  const speak = useCallback((text: string) => {
-    setSubtitle(text);
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'ko-KR';
-      window.speechSynthesis.speak(u);
-    }
-  }, []);
+  const { subtitle, speak, showSubtitle, stop: stopCoach } = useCoachSpeech(coachOn);
 
   const showFailure = useCallback(
     (msg: string) => {
@@ -147,10 +133,23 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
         setAlertMessage(msg.trim() || AI_MODEL_ALERT_DEFAULT);
         setAlertOpen(true);
       }
-      speak(msg);
+      speak(msg, { force: true });
     },
     [speak],
   );
+
+  const toggleCoach = useCallback(() => {
+    setCoachOn((prev) => {
+      const next = !prev;
+      if (!next) {
+        stopCoach();
+        showSubtitle(coachPausedSpeech());
+      } else {
+        speak(coachResumedSpeech());
+      }
+      return next;
+    });
+  }, [speak, showSubtitle, stopCoach]);
 
   useEffect(() => {
     void loadBaselineUrls().catch(() => undefined);
@@ -196,21 +195,56 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   }, [captureKind]);
 
   useEffect(() => {
-    const intro =
-      mode === 'baseline'
-        ? '입구·바닥·책상 3곳 baseline 영상을 찍어요. Gemini AI가 학습 가능한지 평가합니다.'
-        : mode === 'dirty'
-          ? `${SLOTS[0]}부터 촬영해요. 고스트 라인에 맞추고 3곳 모두 필요합니다.`
-          : `부모 baseline과 비교합니다. ${SLOTS[0]}부터 3곳 모두 촬영해 주세요.`;
-    const t = setTimeout(() => speak(intro), 0);
+    ghostReadySpokenRef.current.clear();
+    countdownSpokenRef.current.clear();
+    const intro = captureModeIntro(mode);
+    const t = setTimeout(() => {
+      if (coachOn) speak(intro);
+      else showSubtitle(intro);
+    }, 0);
     return () => clearTimeout(t);
-  }, [mode, speak]);
+  }, [mode, coachOn, speak, showSubtitle]);
+
+  const goToSlot = useCallback(
+    (index: number) => {
+      setGhostAligned(false);
+      setSlotIdx(index);
+      ghostReadySpokenRef.current.add(index);
+      if (mode === 'baseline' || !coachOn) return;
+      if (!baselineUrls[index]) {
+        speak(slotBaselineMissing(index));
+        return;
+      }
+      speak(slotAlignSpeech(index));
+    },
+    [mode, coachOn, baselineUrls, speak],
+  );
+
+  /** 고스트 미디어 로드 완료 시 1회 안내 (슬롯 탭으로 이미 말한 경우 제외) */
+  useEffect(() => {
+    if (mode === 'baseline' || !coachOn || !ghostUrl || ghostMedia.status !== 'ready') return;
+    if (ghostReadySpokenRef.current.has(slotIdx)) return;
+    ghostReadySpokenRef.current.add(slotIdx);
+    speak(slotAlignSpeech(slotIdx));
+  }, [mode, coachOn, ghostUrl, ghostMedia.status, slotIdx, speak]);
 
   useEffect(() => {
     if (!recording) return;
     const t = setInterval(() => setTimer((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(t);
   }, [recording]);
+
+  useEffect(() => {
+    if (!recording) {
+      countdownSpokenRef.current.clear();
+      return;
+    }
+    if (!coachOn) return;
+    const line = recordingCountdownSpeech(timer);
+    if (!line || countdownSpokenRef.current.has(timer)) return;
+    countdownSpokenRef.current.add(timer);
+    speak(line);
+  }, [recording, timer, coachOn, speak]);
 
   const persistCapture = async (
     file: File,
@@ -237,7 +271,8 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
         await evaluateAllBaselineSlots(captures, SLOTS);
         await ensureBaselineStored();
         await updateFamilyProfile({ baseline_verified: true });
-        if (coachOn) speak('baseline 3곳 AI 합격! 이제 청소 시간을 설정해요.');
+        if (coachOn) speak(baselinePassSpeech());
+        else showSubtitle(baselinePassSpeech());
         if (nextHref) router.push(nextHref);
         else onComplete?.();
         return;
@@ -247,7 +282,8 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
         setPhase('scanning');
         const res = await scanAllSlotCaptures(captures, SLOTS);
         setScanResult(monstersToQuest(res.monsters), res.pollution, res.summary);
-        if (coachOn) speak('3곳 스캔 완료! 청소 리스트를 확인해요.');
+        if (coachOn) speak(dirtyScanDoneSpeech());
+        else showSubtitle(dirtyScanDoneSpeech());
         if (nextHref) router.push(nextHref);
         else onComplete?.();
         return;
@@ -266,7 +302,9 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
       const res = await compareAllSlotsWithBaseline(captures, urlsForCompare, SLOTS);
       setVerifyResult(res.cleanliness, res.comment);
       await patchLogMeta(todayKey, { score: res.cleanliness, streak_days: streakDays });
-      if (coachOn) speak(`Gemini baseline 비교 ${res.cleanliness}점!`);
+      const afterMsg = afterCompareSpeech(res.cleanliness);
+      if (coachOn) speak(afterMsg);
+      else showSubtitle(afterMsg);
       if (nextHref) router.push(nextHref);
       else onComplete?.();
     } catch (e) {
@@ -293,8 +331,9 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
 
       if (index < SLOT_COUNT - 1) {
         const next = index + 1;
-        setSlotIdx(next);
-        speak(`${SLOTS[next]} ${captureKind === 'video' ? '영상' : '사진'}을 이어서 찍어 주세요.`);
+        setGhostAligned(false);
+        goToSlot(next);
+        speak(slotTransitionSpeech(next, captureKind));
         return;
       }
 
@@ -336,7 +375,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
     recorderRef.current = recorder;
     setRecording(true);
     setTimer(CAPTURE_SEC);
-    speak(`${SLOTS[slotIdx]} 영상 촬영 시작. 고스트 라인에 맞춰 주세요.`);
+    speak(recordingStartSpeech(slotIdx));
 
     stopTimerRef.current = setTimeout(finishRecording, CAPTURE_SEC * 1000);
   };
@@ -373,7 +412,9 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
         <div className="flex gap-1">
           <button
             type="button"
-            onClick={() => setCoachOn((v) => !v)}
+            onClick={toggleCoach}
+            aria-pressed={coachOn}
+            aria-label={coachOn ? '음성 코치 끄기' : '음성 코치 켜기'}
             className={`rounded-full px-2 py-1 text-[10px] font-bold ${coachOn ? 'bg-[#00b8cf] text-white' : 'bg-white/15'}`}
           >
             코치
@@ -420,39 +461,62 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
             카메라 준비 중…
           </div>
         )}
-        {showGhostMedia && ghostUrl && <GhostOverlay url={ghostUrl} />}
-        <GhostGuideLines />
+        {showGhostMedia && ghostUrl && <GhostBaselineMedia url={ghostUrl} />}
+        {ghostMediaBroken && <GhostBaselineUnavailable />}
+        {ghostMediaMissing && <GhostBaselineMissingHint />}
+        {(showGhostMedia || ghostUrl) && <GhostSlotGuide slotIdx={ghostSlot} />}
+        <GhostAlignmentBar
+          slotIdx={ghostSlot}
+          aligned={ghostAligned}
+          onAlignedChange={setGhostAligned}
+          showGhost={showGhostMedia}
+        />
+        <GhostSlotBadge slotIdx={ghostSlot} showGhost={showGhostMedia} />
+        <GhostBottomCue slotIdx={ghostSlot} showGhost={showGhostMedia} />
         {recording && (
           <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full bg-[#f04452] px-2.5 py-1 text-[10px] font-bold">
             <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
             REC
           </div>
         )}
-        <div className="absolute left-3 top-3 rounded-full bg-black/60 px-2 py-1 text-[10px] font-bold text-[#00b8cf]">
-          {showGhostMedia ? `👻 ${SLOTS[slotIdx]}` : SLOTS[slotIdx]}
-        </div>
-        <div className="absolute bottom-3 left-3 right-3 rounded-xl bg-black/55 px-3 py-2 text-xs">
-          {subtitle || '코치 자막'}
-        </div>
+        <CoachSubtitle
+          text={subtitle}
+          placeholder={subtitlePlaceholder(showGhostMedia, slotIdx)}
+          priority={error ? 'assertive' : 'polite'}
+        />
       </div>
 
       <div className="mt-4 flex gap-2">
         {SLOTS.map((s, i) => {
           const done = !!slotCaptures[i];
           const active = i === slotIdx && !done;
+          const hasBaseline = !!baselineUrls[i];
           return (
-            <span
+            <button
               key={s}
-              className={`flex-1 rounded-lg py-2 text-center text-xs font-semibold ${
+              type="button"
+              disabled={done || processing}
+              onClick={() => {
+                if (!done && !processing) goToSlot(i);
+              }}
+              className={`flex-1 rounded-lg py-2 text-center text-[10px] font-semibold leading-tight disabled:opacity-70 ${
                 done ? 'bg-[#00c73c] text-white' : active ? 'bg-[#00b8cf] text-white' : 'bg-white/10 text-white/60'
               }`}
             >
               {done ? '✓ ' : ''}
-              {s}
-            </span>
+              {ghostSlotConfig(i).tabLabel}
+              {mode !== 'baseline' && !hasBaseline && !done && (
+                <span className="mt-0.5 block text-[9px] font-normal text-[#ffc9c9]">baseline 없음</span>
+              )}
+            </button>
           );
         })}
       </div>
+      {mode !== 'baseline' && showGhostMedia && (
+        <p className="mt-2 text-center text-[10px] text-white/45">
+          {ghostSlotConfig(slotIdx).alignTargets}
+        </p>
+      )}
 
       <input
         ref={fileRef}
@@ -498,7 +562,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
             onClick={() => {
               void coachChat('room-1', '지민 방', 72, ['바닥 옷'], [], '힌트 줘')
                 .then((r) => speak(r.reply))
-                .catch(() => speak('책상 위부터 정리해볼까요?'));
+                .catch(() => speak(coachHintFallback()));
             }}
             className="text-xs text-[#00b8cf]"
           >
