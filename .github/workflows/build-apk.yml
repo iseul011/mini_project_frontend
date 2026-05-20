@@ -37,6 +37,9 @@ jobs:
       - name: Android Gradle · wrapper 동기화 (Flutter stable)
         run: |
           set -e
+          cp mini_flutter/android/app/src/main/AndroidManifest.xml /tmp/chungsora_manifest.xml
+          cp -r mini_flutter/android/app/src/main/kotlin/com/chungsora/child /tmp/chungsora_kotlin
+          cp mini_flutter/android/app/src/main/res/xml/device_admin.xml /tmp/device_admin.xml 2>/dev/null || true
           flutter create /tmp/chungsora_ref --org com.chungsora --project-name chungsora_ref --platforms android
           REF=/tmp/chungsora_ref/android
           DST=mini_flutter/android
@@ -47,6 +50,14 @@ jobs:
           cp "$REF/build.gradle.kts" "$DST/build.gradle.kts"
           cp "$REF/gradle.properties" "$DST/gradle.properties"
           cp "$REF/app/build.gradle.kts" "$DST/app/build.gradle.kts"
+          # launcher mipmap 등 리소스 (수동 scaffold에 없음)
+          mkdir -p "$DST/app/src/main/res"
+          cp -r "$REF/app/src/main/res/"* "$DST/app/src/main/res/"
+          # 커스텀 DPC manifest · Kotlin · device_admin 유지
+          test -f /tmp/chungsora_manifest.xml && cp /tmp/chungsora_manifest.xml "$DST/app/src/main/AndroidManifest.xml"
+          test -d /tmp/chungsora_kotlin && cp -r /tmp/chungsora_kotlin/* "$DST/app/src/main/kotlin/com/chungsora/child/"
+          mkdir -p "$DST/app/src/main/res/xml"
+          test -f /tmp/device_admin.xml && cp /tmp/device_admin.xml "$DST/app/src/main/res/xml/device_admin.xml"
           # 앱 ID · namespace · minSdk 유지
           sed -i 's/com\.chungsora\.chungsora_ref/com.chungsora.child/g' "$DST/app/build.gradle.kts"
           sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/' "$DST/app/build.gradle.kts"
