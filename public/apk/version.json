@@ -1,9 +1,8 @@
 {
   "version": "0.5.0",
   "build_number": "5",
-  "built_at": null,
-  "commit": null,
+  "built_at": "2026-05-20T14:28:32Z",
+  "commit": "f959ba78fb797aae17c95e555c06512aa06f3e74",
   "package": "com.chungsora.child",
-  "apk_size_bytes": null,
-  "note": "GitHub Actions build-apk 실행 후 갱신됩니다."
+  "apk_size_bytes": 50547545
 }
