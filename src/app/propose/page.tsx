@@ -3,16 +3,18 @@
 import { RoleShell } from '@/components/chungsora/RoleShell';
 import { ProposeReviewPanel } from '@/components/parent/ProposeReviewPanel';
 import { ChildProposeSendPanel } from '@/components/child/ChildProposeSendPanel';
-import { getRole } from '@/lib/chungsora/role';
-import { useEffect, useState } from 'react';
+import { useChungsoraRole } from '@/lib/chungsora/useChungsoraRole';
+
+function ProposeContent() {
+  const role = useChungsoraRole();
+  if (role === null) return null;
+  return role === 'parent' ? <ProposeReviewPanel /> : <ChildProposeSendPanel />;
+}
 
 export default function ProposePage() {
-  const [role, setRole] = useState<'parent' | 'child'>('parent');
-  useEffect(() => setRole(getRole()), []);
-
   return (
     <RoleShell>
-      {role === 'parent' ? <ProposeReviewPanel /> : <ChildProposeSendPanel />}
+      <ProposeContent />
     </RoleShell>
   );
 }

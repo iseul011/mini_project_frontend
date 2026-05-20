@@ -1,21 +1,26 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { RoleShell } from '@/components/chungsora/RoleShell';
 import { CleaningLogView } from '@/components/chungsora/CleaningLogView';
-import { getRole, type ChungsoraRole } from '@/lib/chungsora/role';
+import { useChungsoraRole } from '@/lib/chungsora/useChungsoraRole';
+
+function LogViewBody({ dateParam }: { dateParam: string | null }) {
+  const role = useChungsoraRole();
+  if (role === null) return null;
+  return (
+    <CleaningLogView role={role} showBack={role === 'child'} dateParam={dateParam} />
+  );
+}
 
 function LogPageInner() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
-  const [role, setRole] = useState<ChungsoraRole>('parent');
-
-  useEffect(() => setRole(getRole()), []);
 
   return (
-    <RoleShell childHideNav={role === 'child'}>
-      <CleaningLogView role={role} showBack={role === 'child'} dateParam={dateParam} />
+    <RoleShell childHideNav>
+      <LogViewBody dateParam={dateParam} />
     </RoleShell>
   );
 }

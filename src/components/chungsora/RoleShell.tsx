@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { AuthLoading } from '@/components/chungsora/AuthLoading';
 import { StatusBar } from '@/components/chungsora/StatusBar';
 import { ParentShell } from '@/components/parent/ParentShell';
 import { ChildShell } from '@/components/child/ChildShell';
-import { getRole, type ChungsoraRole } from '@/lib/chungsora/role';
+import { useChungsoraRole } from '@/lib/chungsora/useChungsoraRole';
 
 export function RoleShell({
   children,
@@ -13,11 +13,11 @@ export function RoleShell({
   children: React.ReactNode;
   childHideNav?: boolean;
 }) {
-  const [role, setRole] = useState<ChungsoraRole>('parent');
+  const role = useChungsoraRole();
 
-  useEffect(() => {
-    setRole(getRole());
-  }, []);
+  if (role === null) {
+    return <AuthLoading />;
+  }
 
   if (role === 'child') {
     if (childHideNav) {

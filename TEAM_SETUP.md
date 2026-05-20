@@ -89,7 +89,7 @@ pnpm lint
 | `/api/v1/uploads/[...path]` | 바이너리 프록시 |
 
 - 브라우저는 **같은 도메인** `/api/v1/...` 만 호출 (`clientApi.ts` 단일 진입점)
-- chungsora UI: `/parent/login` → 시드 계정 **3jo / 1234** (로컬·배포 DB 시드)
+- chungsora UI: `/parent/login` — Neon `parent_accounts`에 등록된 아이디·비밀번호로 로그인
 
 ---
 
@@ -97,7 +97,7 @@ pnpm lint
 
 1. `http://43.201.95.108:8080/health` · `/health/ready` (EC2·8080 SG)
 2. `https://mini3.cloud/cleaning` — 스캔 **200**, `model_id` 가 `gemini-...`
-3. `https://mini3.cloud/parent/login` — **3jo / 1234** 로그인 → `/parent` 대시보드
+3. `https://mini3.cloud/parent/login` — Neon에 등록된 부모 계정으로 로그인 → `/parent` 대시보드
 4. chungsora: 포인트·로그·보상 API Network **200** (401이면 JWT·BFF `Authorization` 확인)
 
 ---

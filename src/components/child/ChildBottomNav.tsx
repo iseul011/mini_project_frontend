@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { setRole } from '@/lib/chungsora/role';
 
 const LEFT = [
   { label: '홈', href: '/child/home', icon: '🏠' },
@@ -22,14 +23,23 @@ export function ChildBottomNav() {
         {LEFT.map(({ label, href, icon }) => {
           const on = tabActive(pathname, href);
           return (
-            <Link key={href} href={href} className="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2">
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setRole('child')}
+              className="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2"
+            >
               <span className={`text-[20px] ${on ? 'opacity-100' : 'opacity-45'}`}>{icon}</span>
               <span className={`text-[10px] ${on ? 'font-bold text-[#2f3438]' : 'font-medium text-[#adb5bd]'}`}>{label}</span>
             </Link>
           );
         })}
 
-        <Link href="/propose" className="relative -top-3 flex min-w-[56px] flex-col items-center gap-1">
+        <Link
+          href="/propose"
+          onClick={() => setRole('child')}
+          className="relative -top-3 flex min-w-[56px] flex-col items-center gap-1"
+        >
           <span className={`flex h-12 w-12 items-center justify-center rounded-full text-[22px] shadow-sm ${proposeOn ? 'bg-[#e8f8fb] ring-2 ring-[#00b8cf]' : 'bg-[#f0f2f4]'}`}>
             🤝
           </span>
