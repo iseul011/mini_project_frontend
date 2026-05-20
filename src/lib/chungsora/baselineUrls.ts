@@ -8,11 +8,16 @@ export function padBaselineUrls(
   legacyUrl?: string | null,
 ): (string | null)[] {
   const padded: (string | null)[] = [null, null, null];
-  const source =
-    raw && raw.length > 0 ? raw : legacyUrl ? [legacyUrl] : [];
-  for (let i = 0; i < BASELINE_SLOT_COUNT; i++) {
-    const u = source[i];
-    padded[i] = u ? resolveLogPhotoUrl(u) : null;
+  if (raw && raw.length > 0) {
+    for (let i = 0; i < BASELINE_SLOT_COUNT; i++) {
+      const u = raw[i];
+      const rawVal = u === null || u === undefined || u === '' ? null : String(u);
+      padded[i] = rawVal ? resolveLogPhotoUrl(rawVal) : null;
+    }
+    return padded;
+  }
+  if (legacyUrl) {
+    padded[0] = resolveLogPhotoUrl(legacyUrl);
   }
   return padded;
 }

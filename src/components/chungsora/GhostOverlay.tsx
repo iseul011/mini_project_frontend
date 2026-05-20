@@ -27,7 +27,7 @@ export function GhostBaselineMedia({ url, onReady, onError }: GhostBaselineMedia
         playsInline
         autoPlay
         loop
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+        className="pointer-events-none absolute inset-0 z-[2] h-full w-full object-cover"
         style={style}
         onLoadedData={onReady}
         onError={onError}
@@ -40,7 +40,7 @@ export function GhostBaselineMedia({ url, onReady, onError }: GhostBaselineMedia
     <img
       src={url}
       alt=""
-      className="pointer-events-none absolute inset-0 h-full w-full object-cover mix-blend-screen"
+      className="pointer-events-none absolute inset-0 z-[2] h-full w-full object-cover"
       style={style}
       onLoad={onReady}
       onError={onError}
@@ -175,7 +175,7 @@ export function GhostBaselineMissingHint() {
   );
 }
 
-/** baseline URL 로드 가능 여부 (404·빈 URL 대응) */
+/** baseline URL fetch 가능 여부 (BFF·404 확인, 오버레이 표시와 분리) */
 export function useGhostMediaStatus(url: string | null | undefined) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
 
@@ -188,42 +188,18 @@ export function useGhostMediaStatus(url: string | null | undefined) {
     let cancelled = false;
     setStatus('loading');
 
-    if (isGhostVideoUrl(url)) {
-      const video = document.createElement('video');
-      video.muted = true;
-      video.playsInline = true;
-      const onOk = () => {
-        if (!cancelled) setStatus('ready');
-      };
-      const onFail = () => {
+    const probe = async () => {
+      try {
+        const res = await fetch(url, { method: 'GET', credentials: 'include', cache: 'no-store' });
+        if (!cancelled) setStatus(res.ok ? 'ready' : 'error');
+      } catch {
         if (!cancelled) setStatus('error');
-      };
-      video.addEventListener('loadeddata', onOk, { once: true });
-      video.addEventListener('error', onFail, { once: true });
-      video.src = url;
-      video.load();
-      return () => {
-        cancelled = true;
-        video.removeEventListener('loadeddata', onOk);
-        video.removeEventListener('error', onFail);
-        video.src = '';
-      };
-    }
+      }
+    };
 
-    const img = new Image();
-    const onOk = () => {
-      if (!cancelled) setStatus('ready');
-    };
-    const onFail = () => {
-      if (!cancelled) setStatus('error');
-    };
-    img.addEventListener('load', onOk);
-    img.addEventListener('error', onFail);
-    img.src = url;
+    void probe();
     return () => {
       cancelled = true;
-      img.removeEventListener('load', onOk);
-      img.removeEventListener('error', onFail);
     };
   }, [url]);
 

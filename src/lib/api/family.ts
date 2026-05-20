@@ -13,7 +13,7 @@ export type FamilySummary = {
   onboard_done: boolean;
   today_score: number;
   baseline_url: string | null;
-  baseline_urls: string[];
+  baseline_urls: (string | null)[];
   baseline_verified: boolean;
 };
 

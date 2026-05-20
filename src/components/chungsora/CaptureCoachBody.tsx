@@ -24,7 +24,6 @@ import {
   GhostBottomCue,
   GhostSlotBadge,
   GhostSlotGuide,
-  useGhostMediaStatus,
 } from '@/components/chungsora/GhostOverlay';
 import { AI_MODEL_ALERT_DEFAULT, isAiModelError } from '@/lib/chungsora/modelAlert';
 import {
@@ -94,6 +93,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   const [cameraError, setCameraError] = useState('');
   const [timer, setTimer] = useState(CAPTURE_SEC);
   const [ghostAligned, setGhostAligned] = useState(false);
+  const [ghostMediaFailed, setGhostMediaFailed] = useState(false);
 
   const setScanResult = useCleaningSessionStore((s) => s.setScanResult);
   const setVerifyResult = useCleaningSessionStore((s) => s.setVerifyResult);
@@ -103,10 +103,12 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   const todayKey = toLogDateParam(new Date());
   const ghostUrl = mode !== 'baseline' ? baselineUrls[slotIdx] : null;
   const ghostSlot = slotIdx as GhostSlotIndex;
-  const ghostMedia = useGhostMediaStatus(ghostUrl);
-  const showGhostMedia =
-    mode !== 'baseline' && !!ghostUrl && ghostMedia.status === 'ready';
-  const ghostMediaBroken = mode !== 'baseline' && !!ghostUrl && ghostMedia.status === 'error';
+  const showGhostMedia = mode !== 'baseline' && !!ghostUrl && !ghostMediaFailed;
+  const ghostMediaBroken = mode !== 'baseline' && !!ghostUrl && ghostMediaFailed;
+
+  useEffect(() => {
+    setGhostMediaFailed(false);
+  }, [ghostUrl]);
   const ghostMediaMissing = mode !== 'baseline' && !ghostUrl;
   const slotsDone = slotCaptures.filter(Boolean).length;
   const allSlotsDone = slotsDone === SLOT_COUNT;
@@ -220,13 +222,13 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
     [mode, coachOn, baselineUrls, speak],
   );
 
-  /** 고스트 미디어 로드 완료 시 1회 안내 (슬롯 탭으로 이미 말한 경우 제외) */
+  /** 고스트 URL 준비 후 1회 안내 (슬롯 탭으로 이미 말한 경우 제외) */
   useEffect(() => {
-    if (mode === 'baseline' || !coachOn || !ghostUrl || ghostMedia.status !== 'ready') return;
+    if (mode === 'baseline' || !coachOn || !ghostUrl || ghostMediaFailed) return;
     if (ghostReadySpokenRef.current.has(slotIdx)) return;
     ghostReadySpokenRef.current.add(slotIdx);
     speak(slotAlignSpeech(slotIdx));
-  }, [mode, coachOn, ghostUrl, ghostMedia.status, slotIdx, speak]);
+  }, [mode, coachOn, ghostUrl, ghostMediaFailed, slotIdx, speak]);
 
   useEffect(() => {
     if (!recording) return;
@@ -461,10 +463,15 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
             카메라 준비 중…
           </div>
         )}
-        {showGhostMedia && ghostUrl && <GhostBaselineMedia url={ghostUrl} />}
+        {showGhostMedia && ghostUrl && (
+          <GhostBaselineMedia
+            url={ghostUrl}
+            onError={() => setGhostMediaFailed(true)}
+          />
+        )}
         {ghostMediaBroken && <GhostBaselineUnavailable />}
         {ghostMediaMissing && <GhostBaselineMissingHint />}
-        {(showGhostMedia || ghostUrl) && <GhostSlotGuide slotIdx={ghostSlot} />}
+        {!!ghostUrl && !ghostMediaFailed && <GhostSlotGuide slotIdx={ghostSlot} />}
         <GhostAlignmentBar
           slotIdx={ghostSlot}
           aligned={ghostAligned}
