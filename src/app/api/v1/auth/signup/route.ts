@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { BFF_FAIL, readUpstreamJson } from '@/lib/api/bffProxyJson';
 import { upstreamUrl, UPSTREAM_MS } from '@/lib/api/bffUpstream';
 
 const COOKIE = 'parent_session';
@@ -23,11 +24,12 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(UPSTREAM_MS),
     });
-    const data = await upstream.json();
-    const res = NextResponse.json(data, { status: upstream.status });
-    if (upstream.ok && data.token) setSessionCookie(res, data.token);
-    return res;
+    const { status, data } = await readUpstreamJson(upstream);
+    const out = NextResponse.json(data, { status });
+    const token = (data as { token?: string })?.token;
+    if (upstream.ok && token) setSessionCookie(out, token);
+    return out;
   } catch {
-    return NextResponse.json({ error: '백엔드 연결 실패' }, { status: 503 });
+    return BFF_FAIL;
   }
 }

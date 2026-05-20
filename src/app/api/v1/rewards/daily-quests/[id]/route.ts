@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { upstreamAuthHeaders } from '@/lib/api/bffAuth';
+import { BFF_FAIL, proxyUpstreamJson } from '@/lib/api/bffProxyJson';
 import { upstreamUrl, UPSTREAM_MS } from '@/lib/api/bffUpstream';
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -12,8 +13,8 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
       headers: upstreamAuthHeaders(req),
       signal: AbortSignal.timeout(UPSTREAM_MS),
     });
-    return NextResponse.json(await res.json(), { status: res.status });
+    return proxyUpstreamJson(res);
   } catch {
-    return NextResponse.json({ error: '백엔드 연결 실패' }, { status: 503 });
+    return BFF_FAIL;
   }
 }

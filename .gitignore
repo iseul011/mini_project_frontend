@@ -1,6 +1,15 @@
 node_modules/
 .next/
 .next2/
+out/
 .env
+.env.*
+!.env.example
 .env.local
 .vercel
+.pnpm-debug.log
+*.tsbuildinfo
+coverage/
+.turbo/
+.DS_Store
+Thumbs.db

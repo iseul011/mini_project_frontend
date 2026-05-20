@@ -1,6 +1,6 @@
 # mini_frontend — 설정 가이드
 
-Next.js 16 · cleaning UI · BFF → EC2 API.
+Next.js 16 · cleaning + chungsora UI · BFF → EC2 API.
 
 ---
 
@@ -8,8 +8,8 @@ Next.js 16 · cleaning UI · BFF → EC2 API.
 
 | 변수 | 넣는 곳 | 넣지 않는 곳 |
 |------|---------|----------------|
-| **`API_URL`** | Vercel Environment Variables | GitHub, `.env`에 Gemini/DB |
-| **`GEMINI_API_KEY` 등** | — | **백엔드 GHA만** |
+| **`API_URL`** | Vercel Environment Variables | GitHub, `.env`에 Gemini/DB/JWT |
+| **`GEMINI_API_KEY`, `JWT_SECRET`, DB** | — | **백엔드 GHA·`.env`만** |
 
 ---
 
@@ -62,6 +62,10 @@ pnpm lint
 
 ## 5. BFF (서버만 EC2 호출)
 
+모든 JSON BFF route는 `bffProxyJson` / `readUpstreamJson` / `proxyUpstreamJsonMapped` 사용 (§27).
+
+### cleaning
+
 | Route | 비고 |
 |-------|------|
 | `/api/v1/cleaning/ai-info` | |
@@ -70,16 +74,31 @@ pnpm lint
 | `/api/v1/cleaning/chat` | 동일 |
 | `/api/v1/cleaning/memory` | |
 
-- Cookie 포워딩 **없음**
-- 브라우저는 항상 **같은 도메인** `/api/v1/cleaning/...` 만 호출
+### chungsora (JWT — `Authorization: Bearer` BFF가 upstream 전달)
+
+| Route | 비고 |
+|-------|------|
+| `/api/v1/auth/login`, `signup`, `me` | 로그인·회원가입 |
+| `/api/v1/family/summary`, `pair/issue`, `pair/verify` | 가족 페어링 |
+| `/api/v1/points` | 포인트 |
+| `/api/v1/lock/policy` | 잠금 정책 |
+| `/api/v1/praise-presets` | 칭찬 프리셋 |
+| `/api/v1/child/propose`, `/api/v1/parent/propose` | 제안 스레드 |
+| `/api/v1/rewards/shop`, `daily-quests` | 보상 상점·퀘스트 |
+| `/api/v1/logs/calendar/[yearMonth]`, `/api/v1/logs/[date]/*` | 청소 로그·사진 URL rewrite |
+| `/api/v1/uploads/[...path]` | 바이너리 프록시 |
+
+- 브라우저는 **같은 도메인** `/api/v1/...` 만 호출 (`clientApi.ts` 단일 진입점)
+- chungsora UI: `/parent/login` → 시드 계정 **3jo / 1234** (로컬·배포 DB 시드)
 
 ---
 
 ## 6. 연동 테스트 순서
 
-1. `http://43.201.95.108:8080/health` (EC2·8080 SG)
-2. `https://mini3.cloud/cleaning` 접속
-3. **`/cleaning/scan`** 사진 업로드 → Network `scan` **200**, `model_id` 가 `gemini-...`
+1. `http://43.201.95.108:8080/health` · `/health/ready` (EC2·8080 SG)
+2. `https://mini3.cloud/cleaning` — 스캔 **200**, `model_id` 가 `gemini-...`
+3. `https://mini3.cloud/parent/login` — **3jo / 1234** 로그인 → `/parent` 대시보드
+4. chungsora: 포인트·로그·보상 API Network **200** (401이면 JWT·BFF `Authorization` 확인)
 
 ---
 
@@ -90,8 +109,9 @@ pnpm lint
 | `DEPLOYMENT_NOT_FOUND` | Vercel Domains에 도메인 등록 |
 | `.next` not found 빌드 실패 | `next.config`에 `distDir` 없는지 확인 |
 | `503` 백엔드 연결 실패 | Vercel `API_URL`, EC2 컨테이너·8080 |
-| 스캔만 30초에 끊김 | BFF 110s·`maxDuration` 120 확인 (이미 적용됨) |
+| chungsora `401` | 로그인 후 localStorage JWT, BFF upstream 전달 확인 |
+| 스캔만 30초에 끊김 | BFF 110s·`maxDuration` 120 확인 |
 | `model_id: fallback` | 백엔드 Gemini 키·로그 |
 
-규칙 전체: `../CODE_RULES.md`  
+규칙 전체: `CODE_RULES.md` (모노레포 루트) 또는 팀 공유 문서  
 백엔드·GHA: `../mini_backend/TEAM_SETUP.md`

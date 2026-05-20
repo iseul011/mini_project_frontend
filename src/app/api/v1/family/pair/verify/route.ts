@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CHILD_SESSION_COOKIE } from '@/lib/api/bffAuth';
+import { BFF_FAIL, readUpstreamJson } from '@/lib/api/bffProxyJson';
 import { upstreamUrl, UPSTREAM_MS } from '@/lib/api/bffUpstream';
 
 const MAX_AGE = 60 * 60 * 24 * 30;
@@ -13,10 +14,11 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(UPSTREAM_MS),
     });
-    const data = await res.json();
-    const out = NextResponse.json(data, { status: res.status });
-    if (res.ok && data.device_token) {
-      out.cookies.set(CHILD_SESSION_COOKIE, data.device_token, {
+    const { status, data } = await readUpstreamJson(res);
+    const out = NextResponse.json(data, { status });
+    const deviceToken = (data as { device_token?: string })?.device_token;
+    if (res.ok && deviceToken) {
+      out.cookies.set(CHILD_SESSION_COOKIE, deviceToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -26,6 +28,6 @@ export async function POST(req: NextRequest) {
     }
     return out;
   } catch {
-    return NextResponse.json({ error: '백엔드 연결 실패' }, { status: 503 });
+    return BFF_FAIL;
   }
 }

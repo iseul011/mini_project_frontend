@@ -1,7 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { upstreamAuthHeaders } from '@/lib/api/bffAuth';
+import { BFF_FAIL, proxyUpstreamJsonMapped } from '@/lib/api/bffProxyJson';
 import { resolveLogPhotoUrl } from '@/lib/api/resolveLogPhotoUrl';
 import { upstreamUrl, UPSTREAM_MS } from '@/lib/api/bffUpstream';
+
 type Ctx = { params: Promise<{ date: string }> };
 
 function mapLogDetail(data: Record<string, unknown>) {
@@ -19,10 +21,9 @@ export async function GET(req: NextRequest, ctx: Ctx) {
       headers: upstreamAuthHeaders(req),
       signal: AbortSignal.timeout(UPSTREAM_MS),
     });
-    const data = await res.json();
-    return NextResponse.json(mapLogDetail(data), { status: res.status });
+    return proxyUpstreamJsonMapped(res, mapLogDetail);
   } catch {
-    return NextResponse.json({ error: '백엔드 연결 실패' }, { status: 503 });
+    return BFF_FAIL;
   }
 }
 
@@ -36,9 +37,8 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(UPSTREAM_MS),
     });
-    const data = await res.json();
-    return NextResponse.json(mapLogDetail(data), { status: res.status });
+    return proxyUpstreamJsonMapped(res, mapLogDetail);
   } catch {
-    return NextResponse.json({ error: '백엔드 연결 실패' }, { status: 503 });
+    return BFF_FAIL;
   }
 }
