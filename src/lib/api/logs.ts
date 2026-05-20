@@ -1,5 +1,7 @@
 import { fetchJson } from '@/lib/api/fetchJson';
+import { isUploadTooLargeForBff, UPLOAD_TOO_LARGE_MESSAGE } from '@/lib/api/uploadLimits';
 import { authHeaders } from '@/lib/api/authSession';
+import { prepareUploadFile } from '@/lib/chungsora/prepareUploadFile';
 import type { ChatEntry } from '@/components/chungsora/MessageComposer';
 const BASE = '/api/v1/logs';
 
@@ -71,8 +73,12 @@ export async function uploadLogPhoto(
 ) {
   const qs = new URLSearchParams({ phase });
   if (slot !== undefined) qs.set('slot', String(slot));
+  const body = await prepareUploadFile(file);
+  if (isUploadTooLargeForBff(body.size)) {
+    throw new Error(UPLOAD_TOO_LARGE_MESSAGE);
+  }
   const form = new FormData();
-  form.append('file', file);
+  form.append('file', body);
   return fetchJson<UploadLogPhotoResponse>(
     `${BASE}/${encodeURIComponent(date)}/photos?${qs.toString()}`,
     { method: 'POST', headers: authHeaders(), body: form },

@@ -11,7 +11,7 @@ import {
   scanAllSlotCaptures,
 } from '@/lib/chungsora/captureSlots';
 import { padBaselineUrls, baselineSlotsReady } from '@/lib/chungsora/baselineUrls';
-import { pickRecorderMime } from '@/lib/chungsora/captureVideo';
+import { CAPTURE_CAMERA_CONSTRAINTS, createCaptureRecorder } from '@/lib/chungsora/captureVideo';
 import { toLogDateParam } from '@/lib/chungsora/logV2';
 import { useCleaningSessionStore, type QuestItem } from '@/lib/chungsora/cleaningSessionStore';
 import { AiModelAlert } from '@/components/chungsora/AiModelAlert';
@@ -164,7 +164,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
     async function startCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
+          video: CAPTURE_CAMERA_CONSTRAINTS,
           audio: false,
         });
         if (cancelled) {
@@ -360,9 +360,8 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
     const stream = streamRef.current;
     if (!stream || recording || processing || slotCaptures[slotIdx]) return;
 
-    const mime = pickRecorderMime();
     chunksRef.current = [];
-    const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+    const recorder = createCaptureRecorder(stream);
     recorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunksRef.current.push(e.data);
     };
