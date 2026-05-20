@@ -38,11 +38,25 @@ jobs:
         working-directory: mini_flutter
         run: flutter create . --platforms=android --org com.chungsora --project-name chungsora_child
 
+      - name: Gradle wrapper 실행 권한
+        run: chmod +x mini_flutter/android/gradlew
+
       - working-directory: mini_flutter
         run: flutter pub get
 
-      - working-directory: mini_flutter
-        run: flutter build apk --release
+      - name: APK 빌드
+        working-directory: mini_flutter
+        run: |
+          set -o pipefail
+          flutter build apk --release 2>&1 | tee ../build-apk.log
+          tail -n 60 ../build-apk.log
+
+      - name: 빌드 로그 (실패 시)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-build-log
+          path: build-apk.log
 
       - name: APK 빌드 산출물 확인
         run: test -f mini_flutter/build/app/outputs/flutter-apk/app-release.apk
