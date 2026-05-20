@@ -154,6 +154,7 @@ jobs:
             grep "error •" analyze.log 2>/dev/null || true
             echo "=== Gradle/Kotlin errors ==="
             grep -E "^(FAILURE:|\\* What went wrong|Execution failed|e: file|error: |> Task :app:)" build-apk.log 2>/dev/null || true
+            grep -E "e: file://|Unresolved reference|Compilation error" build-apk.log 2>/dev/null | head -n 20 || true
             grep -E "\.dart:[0-9]+:[0-9]+:" build-apk.log analyze.log 2>/dev/null || true
             echo ""
             echo "=== Last 80 lines ==="
