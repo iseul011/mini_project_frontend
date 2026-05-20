@@ -9,6 +9,7 @@ import { useAuthHydrated } from '@/lib/chungsora/useAuthHydrated';
 import { useParentSessionHydrate } from '@/lib/chungsora/useParentSessionHydrate';
 import { setRole } from '@/lib/chungsora/role';
 import { ParentBottomNav } from './ParentBottomNav';
+import { useStopCoachOnLeaveCapture } from '@/lib/chungsora/coachSpeechGuard';
 import { fetchParentProposals } from '@/lib/chungsora/clientApi';
 import { getPendingThread, useProposeStore } from '@/lib/chungsora/proposeStore';
 
@@ -22,6 +23,7 @@ const NO_NAV_PREFIXES = [
 export function ParentShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  useStopCoachOnLeaveCapture();
   const hydrated = useAuthHydrated();
   useParentSessionHydrate();
   const parentLoggedIn = useAuthStore((s) => s.parentLoggedIn);

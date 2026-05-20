@@ -24,7 +24,13 @@ function pickKoreanVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice |
 
 export function stopCoachSpeech(): void {
   if (typeof window === 'undefined' || !window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
+  const syn = window.speechSynthesis;
+  syn.pause();
+  syn.cancel();
+  // iOS/Android: 큐에 남은 발화 제거
+  for (let i = 0; i < 8 && (syn.speaking || syn.pending); i += 1) {
+    syn.cancel();
+  }
 }
 
 function utterance(text: string): SpeechSynthesisUtterance {

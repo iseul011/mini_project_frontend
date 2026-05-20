@@ -9,6 +9,7 @@ import { useAuthHydrated } from '@/lib/chungsora/useAuthHydrated';
 import { setRole } from '@/lib/chungsora/role';
 import { useChildSessionHydrate } from '@/lib/chungsora/useChildSessionHydrate';
 import { ChildBottomNav } from './ChildBottomNav';
+import { useStopCoachOnLeaveCapture } from '@/lib/chungsora/coachSpeechGuard';
 
 const FLOW_PREFIXES = [
   '/child/lock',
@@ -22,6 +23,7 @@ const FLOW_PREFIXES = [
 export function ChildShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  useStopCoachOnLeaveCapture();
   const hydrated = useAuthHydrated();
   useChildSessionHydrate();
   const childPaired = useAuthStore((s) => s.childPaired);

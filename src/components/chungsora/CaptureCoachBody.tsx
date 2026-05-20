@@ -393,6 +393,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
     const stream = streamRef.current;
     if (!stream || recording || processing || slotCaptures[slotIdx]) return;
 
+    stopCoach();
     chunksRef.current = [];
     const recorder = createCaptureRecorder(stream);
     recorder.ondataavailable = (e) => {
