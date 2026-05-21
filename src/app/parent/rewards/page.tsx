@@ -16,6 +16,7 @@ import {
   type DailyQuest,
   type ShopReward,
 } from '@/lib/chungsora/clientApi';
+import { deferEffect } from '@/lib/react/deferEffect';
 
 const BASE_OPTIONS = [500, 1000, 1500, 2000, 2500];
 
@@ -46,7 +47,9 @@ function RewardsPageInner() {
   }, []);
 
   useEffect(() => {
-    void load();
+    deferEffect(() => {
+      void load();
+    });
   }, [load]);
 
   const startEdit = (r: ShopReward) => {

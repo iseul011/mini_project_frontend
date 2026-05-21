@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { verifyPairCode } from '@/lib/chungsora/clientApi';
 import { useAuthStore } from '@/lib/chungsora/authStore';
 import { setRole } from '@/lib/chungsora/role';
@@ -12,14 +12,12 @@ function ChildPairInner() {
   const router = useRouter();
   const params = useSearchParams();
   const setChildSession = useAuthStore((s) => s.setChildSession);
-  const [code, setCode] = useState(params.get('code')?.toUpperCase() ?? '');
+  const [code, setCode] = useState(() => {
+    const fromUrl = params.get('code');
+    return fromUrl ? fromUrl.toUpperCase().slice(0, 6) : '';
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const fromUrl = params.get('code');
-    if (fromUrl) setCode(fromUrl.toUpperCase().slice(0, 6));
-  }, [params]);
 
   const connect = async () => {
     setLoading(true);

@@ -17,6 +17,7 @@ import {
   createCaptureRecorder,
 } from '@/lib/chungsora/captureVideo';
 import { toLogDateParam } from '@/lib/chungsora/logV2';
+import { deferEffect } from '@/lib/react/deferEffect';
 import { useCleaningSessionStore, type QuestItem } from '@/lib/chungsora/cleaningSessionStore';
 import { AiModelAlert } from '@/components/chungsora/AiModelAlert';
 import { CoachSubtitle } from '@/components/chungsora/CoachSubtitle';
@@ -113,7 +114,7 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   const ghostMediaBroken = mode !== 'baseline' && !!ghostUrl && ghostMediaFailed;
 
   useEffect(() => {
-    setGhostMediaFailed(false);
+    deferEffect(() => setGhostMediaFailed(false));
   }, [ghostUrl]);
   const ghostMediaMissing = mode !== 'baseline' && !ghostUrl;
   const slotsDone = slotCaptures.filter(Boolean).length;
@@ -168,7 +169,9 @@ export function CaptureCoachBody({ mode, nextHref, onComplete }: CaptureCoachBod
   }, [speak, showSubtitle, stopCoach]);
 
   useEffect(() => {
-    void loadBaselineUrls().catch(() => undefined);
+    deferEffect(() => {
+      void loadBaselineUrls().catch(() => undefined);
+    });
   }, [loadBaselineUrls]);
 
   useEffect(() => {

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { wonToP, WON_PER_P } from '@/lib/chungsora/tokens';
 import { fetchPointsBalance, spendPoints, fetchShopRewards, type ShopReward } from '@/lib/chungsora/clientApi';
+import { deferEffect } from '@/lib/react/deferEffect';
 
 export default function ChildPointsPage() {
   const [balance, setBalance] = useState(0);
@@ -20,7 +21,9 @@ export default function ChildPointsPage() {
   }, []);
 
   useEffect(() => {
-    void load();
+    deferEffect(() => {
+      void load();
+    });
   }, [load]);
 
   const redeem = async (r: ShopReward) => {

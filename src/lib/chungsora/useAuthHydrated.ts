@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useAuthStore } from '@/lib/chungsora/authStore';
 
 function authStoreHasHydrated() {
@@ -8,16 +8,13 @@ function authStoreHasHydrated() {
 }
 
 export function useAuthHydrated() {
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    if (authStoreHasHydrated()) {
-      setHydrated(true);
-      return;
-    }
-    const unsub = useAuthStore.persist?.onFinishHydration?.(() => setHydrated(true));
-    return () => unsub?.();
-  }, []);
-
-  return hydrated;
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      if (authStoreHasHydrated()) return () => undefined;
+      const unsub = useAuthStore.persist?.onFinishHydration?.(onStoreChange);
+      return () => unsub?.();
+    },
+    authStoreHasHydrated,
+    () => false,
+  );
 }

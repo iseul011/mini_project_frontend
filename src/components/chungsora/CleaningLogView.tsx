@@ -19,6 +19,7 @@ import { usePraiseStore } from '@/lib/chungsora/praiseStore';
 import { getRole, type ChungsoraRole } from '@/lib/chungsora/role';
 import { useSettingsStore } from '@/lib/chungsora/settingsStore';
 import { calcCleaningPayout } from '@/lib/chungsora/tokens';
+import { deferEffect } from '@/lib/react/deferEffect';
 
 const FIREWORKS_KEY = 'chungsora-log-fireworks-seen';
 
@@ -66,19 +67,26 @@ export function CleaningLogView({ role: roleProp, showBack, dateParam }: Cleanin
   const payout = calcCleaningPayout(baseCleanWon, score, streakDays);
 
   useEffect(() => {
-    if (roleProp) setRole(roleProp);
-    else setRole(getRole());
+    deferEffect(() => {
+      if (roleProp) setRole(roleProp);
+      else setRole(getRole());
+    });
   }, [roleProp]);
 
   useEffect(() => {
     if (role !== 'child') return;
-    const seen = localStorage.getItem(FIREWORKS_KEY);
-    if (!seen) {
-      setShowFireworks(true);
-      localStorage.setItem(FIREWORKS_KEY, '1');
-      const t = setTimeout(() => setShowFireworks(false), 3200);
-      return () => clearTimeout(t);
-    }
+    let fireworksTimer: ReturnType<typeof setTimeout> | undefined;
+    deferEffect(() => {
+      const seen = localStorage.getItem(FIREWORKS_KEY);
+      if (!seen) {
+        setShowFireworks(true);
+        localStorage.setItem(FIREWORKS_KEY, '1');
+        fireworksTimer = setTimeout(() => setShowFireworks(false), 3200);
+      }
+    });
+    return () => {
+      if (fireworksTimer) clearTimeout(fireworksTimer);
+    };
   }, [role]);
 
   const loadLog = useCallback(async () => {
@@ -102,7 +110,9 @@ export function CleaningLogView({ role: roleProp, showBack, dateParam }: Cleanin
   }, [dateKey]);
 
   useEffect(() => {
-    void loadLog();
+    deferEffect(() => {
+      void loadLog();
+    });
   }, [loadLog]);
 
   useEffect(() => {

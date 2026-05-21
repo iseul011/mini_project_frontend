@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Copy, Share2 } from 'lucide-react';
 import { issuePairCode, type PairIssueResponse } from '@/lib/chungsora/clientApi';
+import { deferEffect } from '@/lib/react/deferEffect';
 
 export function PairConnectPanel() {
   const [pair, setPair] = useState<PairIssueResponse | null>(null);
@@ -31,7 +32,9 @@ export function PairConnectPanel() {
   }, []);
 
   useEffect(() => {
-    void load();
+    deferEffect(() => {
+      void load();
+    });
   }, [load]);
 
   useEffect(() => {
@@ -41,7 +44,11 @@ export function PairConnectPanel() {
   }, [secondsLeft, pair?.code]);
 
   useEffect(() => {
-    if (secondsLeft === 0 && pair) void load();
+    if (secondsLeft === 0 && pair) {
+      deferEffect(() => {
+        void load();
+      });
+    }
   }, [secondsLeft, pair, load]);
 
   const fullLink = useMemo(() => {

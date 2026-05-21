@@ -20,6 +20,7 @@ import {
   shortCommit,
   type ApkVersion,
 } from '@/lib/download/apkMeta';
+import { deferEffect } from '@/lib/react/deferEffect';
 
 const FEATURES = [
   { icon: Lock, title: '기기 잠금 (DPC)', desc: '17:00 자동 · Lock Task' },
@@ -34,7 +35,7 @@ export function DownloadClient() {
   const [origin, setOrigin] = useState('');
 
   useEffect(() => {
-    setOrigin(window.location.origin);
+    deferEffect(() => setOrigin(window.location.origin));
     fetch('/apk/version.json', { cache: 'no-store' })
       .then((r) => r.json())
       .then(setInfo)

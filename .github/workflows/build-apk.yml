@@ -1,6 +1,6 @@
-# 프론트 repo 단독 배포 시: mini_flutter/ 가 repo 루트에 있어야 합니다.
+﻿# ?꾨줎??repo ?⑤룆 諛고룷 ?? mini_flutter/ 媛 repo 猷⑦듃???덉뼱???⑸땲??
 
-name: Flutter APK 빌드 (frontend repo)
+name: Flutter APK 鍮뚮뱶 (frontend repo)
 
 on:
   push:
@@ -13,12 +13,18 @@ on:
 permissions:
   contents: write
 
+# APK push 쨌 build-tail push媛 ?숈떆??main??嫄대뱶由ъ? ?딅룄濡?吏곷젹??concurrency:
+  group: build-apk-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   build-apk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
+          fetch-depth: 0
           persist-credentials: true
 
       - uses: actions/setup-java@v4
@@ -31,10 +37,10 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Flutter 프로젝트 확인
-        run: test -d mini_flutter || (echo "::error::mini_flutter/ 폴더가 repo 루트에 필요합니다" && exit 1)
+      - name: Flutter ?꾨줈?앺듃 ?뺤씤
+        run: test -d mini_flutter || (echo "::error::mini_flutter/ ?대뜑媛 repo 猷⑦듃???꾩슂?⑸땲?? && exit 1)
 
-      - name: Android Gradle · wrapper 동기화 (Flutter stable)
+      - name: Android Gradle 쨌 wrapper ?숆린??(Flutter stable)
         run: |
           set -e
           cp mini_flutter/android/app/src/main/AndroidManifest.xml /tmp/chungsora_manifest.xml
@@ -50,17 +56,19 @@ jobs:
           cp "$REF/build.gradle.kts" "$DST/build.gradle.kts"
           cp "$REF/gradle.properties" "$DST/gradle.properties"
           cp "$REF/app/build.gradle.kts" "$DST/app/build.gradle.kts"
-          # launcher mipmap 등 리소스 (수동 scaffold에 없음)
+          # launcher mipmap ??由ъ냼??(?섎룞 scaffold???놁쓬)
           mkdir -p "$DST/app/src/main/res"
           cp -r "$REF/app/src/main/res/"* "$DST/app/src/main/res/"
-          # 커스텀 DPC manifest · Kotlin · device_admin 유지
+          # 而ㅼ뒪? DPC manifest 쨌 Kotlin 쨌 device_admin ?좎?
           test -f /tmp/chungsora_manifest.xml && cp /tmp/chungsora_manifest.xml "$DST/app/src/main/AndroidManifest.xml"
           test -d /tmp/chungsora_kotlin && cp -r /tmp/chungsora_kotlin/* "$DST/app/src/main/kotlin/com/chungsora/child/"
           mkdir -p "$DST/app/src/main/res/xml"
           test -f /tmp/device_admin.xml && cp /tmp/device_admin.xml "$DST/app/src/main/res/xml/device_admin.xml"
-          # 앱 ID · namespace · minSdk 유지
+          # ??ID 쨌 namespace 쨌 minSdk ?좎?
           sed -i 's/com\.chungsora\.chungsora_ref/com.chungsora.child/g' "$DST/app/build.gradle.kts"
           sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/' "$DST/app/build.gradle.kts"
+          # Flutter stable + ?뚮윭洹몄씤 ?명솚: Kotlin 1.9.x 怨좎젙 (2.x??compileReleaseKotlin ?ㅽ뙣 媛??
+          sed -i 's/org.jetbrains.kotlin.android") version "[^"]*"/org.jetbrains.kotlin.android") version "1.9.24"/' "$DST/settings.gradle.kts"
           chmod +x "$DST/gradlew"
           flutter --version
 
@@ -74,38 +82,49 @@ jobs:
         working-directory: mini_flutter
         run: |
           flutter analyze 2>&1 | tee ../analyze.log
-          if grep -q "error •" ../analyze.log; then
-            grep "error •" ../analyze.log
+          if grep -q "error ?? ../analyze.log; then
+            grep "error ?? ../analyze.log
             exit 1
           fi
 
-      - name: APK 빌드
+      - name: APK 鍮뚮뱶
         working-directory: mini_flutter
         run: |
           set -o pipefail
-          flutter build apk --release -v 2>&1 | tee ../build-apk.log || true
-          echo "--- tail ---"
-          tail -n 100 ../build-apk.log
-          grep -iE "error:|FAILURE:|exception|What went wrong" ../build-apk.log | tail -n 30 || true
+          flutter build apk --release --verbose 2>&1 | tee ../build-apk.log
           test -f build/app/outputs/flutter-apk/app-release.apk
 
-      - name: 빌드 로그 (실패 시)
+      - name: 鍮뚮뱶 濡쒓렇 artifact (?ㅽ뙣 ??
         if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-apk-log
+          path: build-apk.log
+          retention-days: 14
+
+      - name: ?꾩껜 鍮뚮뱶 濡쒓렇 怨듦컻 (?ㅽ뙣 ??
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "## Flutter APK build failed" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          tail -n 150 build-apk.log >> "$GITHUB_STEP_SUMMARY" || true
+          grep -E "e: file://|error ??FAILURE:|What went wrong|Compilation error" build-apk.log | tail -n 40 >> "$GITHUB_STEP_SUMMARY" || true
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          cp build-apk.log mini_flutter/LAST_BUILD_ERROR.log
+          cp build-apk.log public/full-build-error.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add mini_flutter/LAST_BUILD_ERROR.log
-          git commit -m "debug: upload build log [skip ci]" || true
-          git push origin HEAD:main || true
+          git add public/full-build-error.txt
+          git diff --staged --quiet && exit 0
+          git commit -m "ci: full build log [skip ci]"
+          REMOTE="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          git fetch origin main
+          git rebase origin/main || true
+          git push "$REMOTE" HEAD:main || true
 
       - run: mkdir -p public/apk
 
-      - name: APK · version.json 복사
+      - name: APK 쨌 version.json 蹂듭궗
         run: |
           cp mini_flutter/build/app/outputs/flutter-apk/app-release.apk public/apk/app-release.apk
           VERSION=$(grep '^version:' mini_flutter/pubspec.yaml | sed 's/version: //' | tr -d ' ')
@@ -132,37 +151,42 @@ jobs:
             public/apk/app-release.apk
             public/apk/version.json
 
-      - name: public/apk 커밋 · push
+      - name: build-tail 쨌 public/apk ?⑥씪 而ㅻ컠 쨌 push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/apk/
-          if git diff --staged --quiet; then
-            echo "::error::APK가 staging되지 않았습니다"
-            exit 1
-          fi
-          git commit -m "chore(apk): release ${APK_VERSION} [skip ci]"
-          git push origin HEAD:main
 
-      - name: 빌드 로그 공개 (항상)
-        if: always()
-        run: |
           {
             echo "=== Dart analyze errors ==="
-            grep "error •" analyze.log 2>/dev/null || true
+            grep "error ?? analyze.log 2>/dev/null || true
             echo "=== Gradle/Kotlin errors ==="
             grep -E "^(FAILURE:|\\* What went wrong|Execution failed|e: file|error: |> Task :app:)" build-apk.log 2>/dev/null || true
-            grep -E "e: file://|Unresolved reference|Compilation error" build-apk.log 2>/dev/null | head -n 20 || true
+            grep -E "e: file://|Unresolved reference|Compilation error|No value passed for parameter" build-apk.log 2>/dev/null | head -n 30 || true
             grep -E "\.dart:[0-9]+:[0-9]+:" build-apk.log analyze.log 2>/dev/null || true
             echo ""
             echo "=== Last 80 lines ==="
             tail -n 80 build-apk.log || true
           } > public/build-tail.txt
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/build-tail.txt
-          git diff --staged --quiet && exit 0
-          git commit -m "ci: build tail [skip ci]"
-          git push origin HEAD:main
+
+          git add public/apk/ public/build-tail.txt
+          if git diff --staged --quiet; then
+            echo "::error::APK媛 staging?섏? ?딆븯?듬땲??
+            exit 1
+          fi
+          git commit -m "chore(apk): release ${APK_VERSION} [skip ci]"
+
+          REMOTE="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin main
+            git rebase origin/main
+            if git push "$REMOTE" HEAD:main; then
+              echo "push succeeded on attempt ${attempt}"
+              exit 0
+            fi
+            echo "push rejected (attempt ${attempt}/5), retrying..."
+            sleep $((attempt * 3))
+          done
+          echo "::error::git push failed after 5 attempts"
+          exit 1

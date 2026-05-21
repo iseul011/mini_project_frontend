@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchLogCalendar } from '@/lib/chungsora/clientApi';
 import { toLogDateParam } from '@/lib/chungsora/logV2';
 import { setRole, type ChungsoraRole } from '@/lib/chungsora/role';
+import { deferEffect } from '@/lib/react/deferEffect';
 
 const DAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
@@ -33,7 +34,9 @@ export function CleaningCalendar({ points: pointsProp = 320, role = 'parent' }: 
   }, [viewYear, viewMonth, now, pointsProp]);
 
   useEffect(() => {
-    void loadCalendar();
+    deferEffect(() => {
+      void loadCalendar();
+    });
   }, [loadCalendar]);
 
   const { cells } = useMemo(() => {

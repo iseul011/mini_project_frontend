@@ -58,35 +58,51 @@ function ParentLoginInner() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col px-5 py-10">
-      <h1 className="text-[26px] font-bold text-[#2f3438]">로그인</h1>
-      <p className="mt-2 text-sm text-[#828c94]">부모 계정으로 청소해라를 시작해요</p>
-      <form onSubmit={(e) => void handleLogin(e)} className="mt-8 flex flex-col gap-4">
-        <input
-          type="text"
-          value={loginId}
-          onChange={(e) => setLoginId(e.target.value)}
-          placeholder="아이디"
-          autoComplete="username"
-          className="rounded-xl border border-[#eaedef] px-4 py-3.5 text-sm outline-none focus:border-[#00b8cf]"
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="비밀번호"
-          autoComplete="current-password"
-          className="rounded-xl border border-[#eaedef] px-4 py-3.5 text-sm outline-none focus:border-[#00b8cf]"
-        />
-        {error ? <p className="text-center text-xs text-red-500">{error}</p> : null}
+      <div className="mb-8">
+        <h1 className="text-[26px] font-bold tracking-[-0.3px] text-[#1a1e22]">로그인</h1>
+        <p className="mt-1.5 text-[14px] text-[#828c94]">부모 계정으로 청소해라를 시작해요</p>
+      </div>
+
+      <form onSubmit={(e) => void handleLogin(e)} className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-1">
+          <label className="text-[12px] font-medium text-[#828c94]">아이디</label>
+          <input
+            type="text"
+            value={loginId}
+            onChange={(e) => setLoginId(e.target.value)}
+            placeholder="아이디를 입력해요"
+            autoComplete="username"
+            className="rounded-xl border border-[#eaedef] bg-[#f7f9fa] px-4 py-3.5 text-[15px] text-[#1a1e22] outline-none placeholder:text-[#c4c9cf] focus:border-[#00b8cf] focus:bg-white transition-colors"
+          />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-[12px] font-medium text-[#828c94]">비밀번호</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="비밀번호를 입력해요"
+            autoComplete="current-password"
+            className="rounded-xl border border-[#eaedef] bg-[#f7f9fa] px-4 py-3.5 text-[15px] text-[#1a1e22] outline-none placeholder:text-[#c4c9cf] focus:border-[#00b8cf] focus:bg-white transition-colors"
+          />
+        </div>
+
+        {error ? (
+          <p className="rounded-xl bg-[#fff0f0] px-4 py-3 text-[13px] font-medium text-[#e03131]">
+            {error}
+          </p>
+        ) : null}
+
         <button
           type="submit"
           disabled={loading || !loginId.trim() || !password}
-          className="ch-btn-primary py-4 text-[15px] disabled:opacity-50"
+          className="ch-btn-primary mt-2 py-4 text-[15px] font-bold disabled:opacity-50"
         >
           {loading ? '로그인 중…' : '로그인'}
         </button>
       </form>
-      <p className="mt-6 text-center text-sm text-[#828c94]">
+
+      <p className="mt-6 text-center text-[14px] text-[#828c94]">
         계정이 없나요?{' '}
         <Link href="/parent/signup" className="font-semibold text-[#00b8cf]">
           회원가입

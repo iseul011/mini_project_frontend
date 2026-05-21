@@ -8,6 +8,7 @@ import {
   isGhostVideoUrl,
   type GhostSlotIndex,
 } from '@/lib/chungsora/ghostSlots';
+import { deferEffect } from '@/lib/react/deferEffect';
 
 type GhostBaselineMediaProps = {
   url: string;
@@ -181,12 +182,14 @@ export function useGhostMediaStatus(url: string | null | undefined) {
 
   useEffect(() => {
     if (!url) {
-      setStatus('idle');
+      deferEffect(() => setStatus('idle'));
       return;
     }
 
     let cancelled = false;
-    setStatus('loading');
+    deferEffect(() => {
+      if (!cancelled) setStatus('loading');
+    });
 
     const probe = async () => {
       try {

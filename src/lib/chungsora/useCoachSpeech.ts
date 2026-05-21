@@ -66,7 +66,9 @@ export function useCoachSpeech(enabled: boolean) {
   const delayRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iosResumeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  enabledRef.current = enabled;
+  useEffect(() => {
+    enabledRef.current = enabled;
+  }, [enabled]);
 
   const clearPendingSpeak = useCallback(() => {
     if (delayRef.current) clearTimeout(delayRef.current);

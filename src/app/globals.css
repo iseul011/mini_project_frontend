@@ -2,8 +2,13 @@
 
 :root {
   --background: #f7f9fa;
-  --foreground: #2f3438;
+  --foreground: #1a1e22;
+  --foreground-secondary: #6b7280;
+  --foreground-tertiary: #adb5bd;
   --chungsora-point: #00b8cf;
+  --chungsora-success: #059669;
+  --chungsora-success-bg: #d1fae5;
+  --chungsora-success-text: #065f46;
   color-scheme: light only;
 }
 
@@ -48,7 +53,7 @@ body {
   border-radius: 12px;
   border: 1px solid #eaedef;
   background: #fff;
-  color: #2f3438;
+  color: #1a1e22;
   font-weight: 600;
 }
 
