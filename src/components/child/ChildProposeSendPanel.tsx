@@ -15,9 +15,8 @@ const PT_OPTIONS = [100, 150, 200, 250, 300];
 export function ChildProposeSendPanel() {
   const threads = useProposeStore((s) => s.threads);
   const setThreads = useProposeStore((s) => s.setThreads);
-  const submitProposal = useProposeStore((s) => s.submitProposal);
-
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [label, setLabel] = useState('');
   const [points, setPoints] = useState(150);
   const [sending, setSending] = useState(false);
@@ -39,21 +38,21 @@ export function ChildProposeSendPanel() {
   const showForm = !pending;
 
   const handleSubmit = async () => {
-    const trimmed = label.trim() || '게임 30분';
+    const trimmed = label.trim();
+    if (!trimmed) {
+      setSubmitError('보상 내용을 입력해 주세요.');
+      return;
+    }
     setSending(true);
+    setSubmitError('');
     try {
-      const res = await submitChildProposal(trimmed, points);
-      if (res.thread) {
-        setThreads([res.thread, ...threads.filter((t) => t.id !== res.thread.id)]);
-      } else {
-        submitProposal(trimmed, points);
-      }
+      await submitChildProposal(trimmed, points);
       const list = await fetchChildProposals();
       if (list.threads) setThreads(list.threads);
+      setLabel('');
     } catch {
-      submitProposal(trimmed, points);
+      setSubmitError('제안 전송에 실패했습니다. 다시 시도해 주세요.');
     }
-    setLabel('');
     setSending(false);
   };
 
@@ -126,6 +125,7 @@ export function ChildProposeSendPanel() {
                 </button>
               ))}
             </div>
+            {submitError && <p className="mt-3 text-sm text-[#e03131]">{submitError}</p>}
             <button
               type="button"
               disabled={sending || proposalTokens <= 0}

@@ -15,7 +15,7 @@ type CleaningCalendarProps = {
   role?: ChungsoraRole;
 };
 
-export function CleaningCalendar({ points: pointsProp = 320, role = 'parent' }: CleaningCalendarProps) {
+export function CleaningCalendar({ points: pointsProp = 0, role = 'parent' }: CleaningCalendarProps) {
   const now = new Date();
   const [viewYear, setViewYear] = useState(now.getFullYear());
   const [viewMonth, setViewMonth] = useState(now.getMonth() + 1);
@@ -29,7 +29,7 @@ export function CleaningCalendar({ points: pointsProp = 320, role = 'parent' }: 
       if (res.points) setMonthPoints(res.points);
     } catch {
       setCleanedSet(new Set());
-      setMonthPoints(pointsProp);
+      setMonthPoints(0);
     }
   }, [viewYear, viewMonth, now, pointsProp]);
 

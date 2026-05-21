@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { updateLockPolicy, updateFamilyProfile } from '@/lib/chungsora/clientApi';
+import { useEffect } from 'react';
+import { fetchLockPolicy, updateLockPolicy, updateFamilyProfile } from '@/lib/chungsora/clientApi';
 import { useSettingsStore } from '@/lib/chungsora/settingsStore';
 
 export default function MoreSchedulePage() {
@@ -9,6 +10,15 @@ export default function MoreSchedulePage() {
   const lockDays = useSettingsStore((s) => s.lockDays);
   const setLockTime = useSettingsStore((s) => s.setLockTime);
   const setLockDays = useSettingsStore((s) => s.setLockDays);
+
+  useEffect(() => {
+    void fetchLockPolicy()
+      .then((p) => {
+        setLockTime(p.lock_time);
+        setLockDays(p.lock_days);
+      })
+      .catch(() => undefined);
+  }, [setLockTime, setLockDays]);
 
   const save = () => {
     void updateLockPolicy({ lock_time: lockTime, lock_days: lockDays }).catch(() => undefined);

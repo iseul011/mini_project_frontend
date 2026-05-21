@@ -8,7 +8,7 @@ import {
   type ChatEntry,
 } from '@/components/chungsora/MessageComposer';
 import { LogPhotoPair } from '@/components/chungsora/LogPhotoPair';
-import { fetchLogDetail, postLogMessage, fetchPraisePresets } from '@/lib/chungsora/clientApi';
+import { fetchLogDetail, postLogMessage, fetchPraisePresets, fetchFamilySummary } from '@/lib/chungsora/clientApi';
 import {
   LOG_CHAT_BG,
   formatLogDateLabel,
@@ -17,7 +17,6 @@ import {
 } from '@/lib/chungsora/logV2';
 import { usePraiseStore } from '@/lib/chungsora/praiseStore';
 import { getRole, type ChungsoraRole } from '@/lib/chungsora/role';
-import { useSettingsStore } from '@/lib/chungsora/settingsStore';
 import { calcCleaningPayout } from '@/lib/chungsora/tokens';
 import { deferEffect } from '@/lib/react/deferEffect';
 
@@ -58,7 +57,7 @@ export function CleaningLogView({ role: roleProp, showBack, dateParam }: Cleanin
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showFireworks, setShowFireworks] = useState(false);
-  const baseCleanWon = useSettingsStore((s) => s.baseCleanWon);
+  const [baseCleanWon, setBaseCleanWon] = useState(0);
   const setCustomPraises = usePraiseStore((s) => s.setCustomPraises);
 
   const logDate = useMemo(() => parseLogDateParam(dateParam), [dateParam]);
@@ -116,11 +115,19 @@ export function CleaningLogView({ role: roleProp, showBack, dateParam }: Cleanin
   }, [loadLog]);
 
   useEffect(() => {
-    fetchPraisePresets()
-      .then((res) => {
-        if (res.presets?.length) setCustomPraises(res.presets);
-      })
-      .catch(() => {/* zustand persist fallback */});
+    deferEffect(() => {
+      void fetchFamilySummary()
+        .then((s) => setBaseCleanWon(s.base_clean_won))
+        .catch(() => setBaseCleanWon(0));
+    });
+  }, []);
+
+  useEffect(() => {
+    deferEffect(() => {
+      void fetchPraisePresets()
+        .then((res) => setCustomPraises(res.presets ?? []))
+        .catch(() => setCustomPraises([]));
+    });
   }, [setCustomPraises]);
 
   const handleSend = async (text: string, badge?: string) => {

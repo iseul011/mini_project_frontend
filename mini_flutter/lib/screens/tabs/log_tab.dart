@@ -21,7 +21,7 @@ class _LogTabState extends State<LogTab> {
   final _familyApi = FamilyApi();
   final _controller = TextEditingController();
   LogDetail? _detail;
-  int _baseCleanWon = 3000;
+  int _baseCleanWon = 0;
   bool _loading = true;
   bool _showFireworks = false;
   String? _error;

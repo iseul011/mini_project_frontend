@@ -43,7 +43,7 @@ class FamilySummary {
     return FamilySummary(
       childDisplayName: json['child_display_name'] as String? ?? '자녀',
       pointsBalance: (json['points_balance'] as num?)?.toInt() ?? 0,
-      baseCleanWon: (json['base_clean_won'] as num?)?.toInt() ?? 3000,
+      baseCleanWon: (json['base_clean_won'] as num?)?.toInt() ?? 0,
       streakDays: (json['streak_days'] as num?)?.toInt() ?? 0,
       streakMult: (json['streak_mult'] as num?)?.toDouble() ?? 1.0,
       passScore: (json['pass_score'] as num?)?.toInt() ?? 70,

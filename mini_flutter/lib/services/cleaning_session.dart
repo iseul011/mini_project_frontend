@@ -25,7 +25,7 @@ class CleaningSession extends ChangeNotifier {
   int cleanliness = 0;
   String verifyComment = '';
   int passScore = 70;
-  int baseCleanWon = 3000;
+  int baseCleanWon = 0;
   int streakDays = 0;
 
   String? error;

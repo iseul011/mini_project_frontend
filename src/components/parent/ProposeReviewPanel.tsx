@@ -7,22 +7,20 @@ import {
   rejectParentProposal,
   fetchFamilySummary,
 } from '@/lib/chungsora/clientApi';
-import { getPendingThread, useProposeStore } from '@/lib/chungsora/proposeStore';
+import { collectRejectReasons, getPendingThread, useProposeStore } from '@/lib/chungsora/proposeStore';
 import { WON_PER_P } from '@/lib/chungsora/tokens';
 import { ProposeHistoryButton, ProposeHistoryDrawer } from '@/components/chungsora/ProposeHistoryDrawer';
 
 export function ProposeReviewPanel() {
   const threads = useProposeStore((s) => s.threads);
   const setThreads = useProposeStore((s) => s.setThreads);
-  const savedRejectReasons = useProposeStore((s) => s.savedRejectReasons);
-  const acceptThread = useProposeStore((s) => s.acceptThread);
-  const rejectThread = useProposeStore((s) => s.rejectThread);
-  const saveRejectReason = useProposeStore((s) => s.saveRejectReason);
-
   const [historyOpen, setHistoryOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [childName, setChildName] = useState('자녀');
+  const [actionError, setActionError] = useState('');
+
+  const savedRejectReasons = collectRejectReasons(threads);
 
   useEffect(() => {
     void fetchParentProposals()
@@ -39,30 +37,29 @@ export function ProposeReviewPanel() {
 
   const handleAccept = async () => {
     if (!pending) return;
+    setActionError('');
     try {
       await acceptParentProposal(pending.id);
-      acceptThread(pending.id);
       const res = await fetchParentProposals();
       if (res.threads) setThreads(res.threads);
     } catch {
-      acceptThread(pending.id);
+      setActionError('수락 처리에 실패했습니다. 다시 시도해 주세요.');
     }
   };
 
   const handleReject = async () => {
     if (!pending) return;
     const trimmed = reason.trim() || '사유 없음';
+    setActionError('');
     try {
       await rejectParentProposal(pending.id, trimmed);
-      rejectThread(pending.id, trimmed);
       const res = await fetchParentProposals();
       if (res.threads) setThreads(res.threads);
+      setRejectOpen(false);
+      setReason('');
     } catch {
-      rejectThread(pending.id, trimmed);
+      setActionError('거절 처리에 실패했습니다. 다시 시도해 주세요.');
     }
-    if (reason.trim()) saveRejectReason(reason.trim());
-    setRejectOpen(false);
-    setReason('');
   };
 
   return (
@@ -76,6 +73,7 @@ export function ProposeReviewPanel() {
       </header>
 
       <div className="px-5 pb-6">
+        {actionError && <p className="mb-3 text-sm text-[#e03131]">{actionError}</p>}
         {!pending ? (
           <div className="ch-card px-4 py-8 text-center">
             <p className="text-sm font-medium text-[#828c94]">대기 중인 제안이 없어요</p>
@@ -115,13 +113,6 @@ export function ProposeReviewPanel() {
                   placeholder="직접 입력"
                   className="mt-3 w-full rounded-xl border border-[#eaedef] px-4 py-3 text-sm outline-none focus:border-[#00b8cf]"
                 />
-                <button
-                  type="button"
-                  onClick={() => saveRejectReason(reason)}
-                  className="mt-2 w-full rounded-xl border border-[#eaedef] py-2.5 text-xs font-semibold text-[#828c94]"
-                >
-                  자주 쓰는 문구 저장
-                </button>
                 <div className="mt-3 flex gap-2">
                   <button type="button" onClick={() => { setRejectOpen(false); setReason(''); }} className="ch-btn-secondary flex-1 py-3.5 text-sm">
                     취소

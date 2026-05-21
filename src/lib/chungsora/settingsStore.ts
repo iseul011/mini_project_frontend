@@ -1,9 +1,8 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { DEMO_BASE_CLEAN_WON } from './demo';
 
+/** 세션 중 캐시 — 값은 API(Neon)에서만 채움 */
 type SettingsState = {
   baseCleanWon: number;
   passScore: number;
@@ -17,20 +16,15 @@ type SettingsState = {
   setAllowPhone: (v: boolean) => void;
 };
 
-export const useSettingsStore = create<SettingsState>()(
-  persist(
-    (set) => ({
-      baseCleanWon: DEMO_BASE_CLEAN_WON,
-      passScore: 70,
-      lockTime: '17:00',
-      lockDays: '월·수·금',
-      allowPhone: true,
-      setBaseCleanWon: (won) => set({ baseCleanWon: won }),
-      setPassScore: (score) => set({ passScore: score }),
-      setLockTime: (time) => set({ lockTime: time }),
-      setLockDays: (days) => set({ lockDays: days }),
-      setAllowPhone: (v) => set({ allowPhone: v }),
-    }),
-    { name: 'chungsora-settings-v1' },
-  ),
-);
+export const useSettingsStore = create<SettingsState>()((set) => ({
+  baseCleanWon: 0,
+  passScore: 0,
+  lockTime: '',
+  lockDays: '',
+  allowPhone: true,
+  setBaseCleanWon: (won) => set({ baseCleanWon: won }),
+  setPassScore: (score) => set({ passScore: score }),
+  setLockTime: (time) => set({ lockTime: time }),
+  setLockDays: (days) => set({ lockDays: days }),
+  setAllowPhone: (v) => set({ allowPhone: v }),
+}));

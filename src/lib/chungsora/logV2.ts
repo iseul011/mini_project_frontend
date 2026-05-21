@@ -1,12 +1,3 @@
-export const DEFAULT_PRAISES = [
-  '특급칭찬',
-  '최고',
-  '대박',
-  '굿잡',
-  '레전드',
-  '짱',
-] as const;
-
 export const PRAISE_EMOJI = ['👏', '🔥', '💯', '⭐', '❤️', '🎉'] as const;
 
 /** v2 로그 — 카카오톡 채팅방 톤 */

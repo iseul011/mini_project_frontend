@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { fetchLockPolicy } from '@/lib/chungsora/clientApi';
 import { ChevronRight } from 'lucide-react';
 import { logoutParent } from '@/lib/chungsora/authStore';
 import { useSettingsStore } from '@/lib/chungsora/settingsStore';
@@ -15,6 +16,21 @@ export default function ParentMorePage() {
   const lockDays   = useSettingsStore((s) => s.lockDays);
   const passScore  = useSettingsStore((s) => s.passScore);
   const allowPhone = useSettingsStore((s) => s.allowPhone);
+  const setLockTime = useSettingsStore((s) => s.setLockTime);
+  const setLockDays = useSettingsStore((s) => s.setLockDays);
+  const setPassScore = useSettingsStore((s) => s.setPassScore);
+  const setAllowPhone = useSettingsStore((s) => s.setAllowPhone);
+
+  useEffect(() => {
+    void fetchLockPolicy()
+      .then((p) => {
+        setLockTime(p.lock_time);
+        setLockDays(p.lock_days);
+        setPassScore(p.pass_score);
+        setAllowPhone(p.allow_phone);
+      })
+      .catch(() => undefined);
+  }, [setLockTime, setLockDays, setPassScore, setAllowPhone]);
 
   const ROWS = [
     {

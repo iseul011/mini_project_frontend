@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 
-const AGE_OPTIONS = Array.from({ length: 13 }, (_, i) => i + 6);
+// 만 10세(초4)~만 19세 — 잠금 동기부여 이해 가능 + 미성년자 범위
+const AGE_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 10);
 
 export default function ParentPairPage() {
   const router = useRouter();
@@ -52,7 +53,7 @@ export default function ParentPairPage() {
 
         <div className="ch-card p-5">
           <p className="text-[13px] font-semibold text-[#828c94]">만 나이</p>
-          <div className="mt-2 grid grid-cols-4 gap-2">
+          <div className="mt-2 grid grid-cols-5 gap-2">
             {AGE_OPTIONS.map((n) => (
               <button
                 key={n}

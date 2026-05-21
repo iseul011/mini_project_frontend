@@ -2,12 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
-import {
-  DEFAULT_PRAISES,
-  PRAISE_EMOJI,
-} from '@/lib/chungsora/logV2';
-import { addPraisePreset } from '@/lib/chungsora/clientApi';
+import { PRAISE_EMOJI } from '@/lib/chungsora/logV2';
+import { addPraisePreset, fetchPraisePresets } from '@/lib/chungsora/clientApi';
 import { usePraiseStore } from '@/lib/chungsora/praiseStore';
+import { deferEffect } from '@/lib/react/deferEffect';
 import type { ChungsoraRole } from '@/lib/chungsora/role';
 
 export type ChatEntry = {
@@ -28,9 +26,16 @@ type PraiseFloatingPanelProps = {
 export function PraiseFloatingPanel({ viewer, onEmoji, onPraiseChip }: PraiseFloatingPanelProps) {
   const customPraises = usePraiseStore((s) => s.customPraises);
   const setCustomPraises = usePraiseStore((s) => s.setCustomPraises);
-  const addPraise = usePraiseStore((s) => s.addPraise);
   const [addingCustom, setAddingCustom] = useState(false);
   const [customDraft, setCustomDraft] = useState('');
+
+  useEffect(() => {
+    deferEffect(() => {
+      void fetchPraisePresets()
+        .then((res) => setCustomPraises(res.presets ?? []))
+        .catch(() => setCustomPraises([]));
+    });
+  }, [setCustomPraises]);
 
   return (
     <div className="mx-2.5 mb-2 rounded-2xl bg-[rgba(40,40,40,0.88)] px-3.5 py-3 backdrop-blur-sm">
@@ -48,19 +53,7 @@ export function PraiseFloatingPanel({ viewer, onEmoji, onPraiseChip }: PraiseFlo
         ))}
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {DEFAULT_PRAISES.map((chip) => (
-          <button
-            key={chip}
-            type="button"
-            onMouseDown={(ev) => ev.preventDefault()}
-            onClick={() => onPraiseChip(chip, true)}
-            className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold text-white"
-          >
-            {chip}
-          </button>
-        ))}
-        {viewer === 'parent' &&
-          customPraises.map((chip) => (
+        {customPraises.map((chip) => (
             <button
               key={chip}
               type="button"
@@ -71,6 +64,9 @@ export function PraiseFloatingPanel({ viewer, onEmoji, onPraiseChip }: PraiseFlo
               {chip}
             </button>
           ))}
+        {viewer === 'parent' && customPraises.length === 0 && (
+          <span className="px-1 text-[10px] text-white/50">칭찬 프리셋을 불러오는 중…</span>
+        )}
         {viewer === 'parent' && (
           <button
             type="button"
@@ -95,13 +91,12 @@ export function PraiseFloatingPanel({ viewer, onEmoji, onPraiseChip }: PraiseFlo
             onClick={() => {
               const trimmed = customDraft.trim();
               if (!trimmed) return;
-              addPraise(trimmed);
               onPraiseChip(trimmed, true);
               setCustomDraft('');
               setAddingCustom(false);
               void addPraisePreset(trimmed)
-                .then((res) => setCustomPraises(res.presets))
-                .catch(() => {/* 로컬 fallback */});
+                .then((res) => setCustomPraises(res.presets ?? []))
+                .catch(() => undefined);
             }}
             className="rounded-full bg-[#00B8CF] px-3 py-1.5 text-xs font-bold text-white"
           >

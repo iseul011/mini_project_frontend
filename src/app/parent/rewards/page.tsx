@@ -42,7 +42,8 @@ function RewardsPageInner() {
       setRewards(shop.rewards);
       setQuests(q.quests);
     } catch {
-      /* persist fallback empty */
+      setRewards([]);
+      setQuests([]);
     }
   }, []);
 

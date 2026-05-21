@@ -27,7 +27,11 @@ export function useChildSessionHydrate() {
 
     if (childPaired) return;
     void fetchFamilySummary()
-      .then(() => setChildPaired(true))
+      .then((s) => {
+        setChildPaired(true);
+        setBaseCleanWon(s.base_clean_won);
+        setPassScore(s.pass_score);
+      })
       .catch(() => undefined);
   }, [
     childPaired,
