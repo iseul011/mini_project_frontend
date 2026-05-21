@@ -2,7 +2,7 @@
 export const BFF_SAFE_UPLOAD_BYTES = 4_000_000;
 
 export const UPLOAD_TOO_LARGE_MESSAGE =
-  '영상 용량이 너무 커서 업로드할 수 없어요. 다시 촬영하거나 사진 3장 모드로 시도해 주세요.';
+  '사진 용량이 너무 커서 업로드할 수 없어요. 다시 촬영해 주세요.';
 
 export function isUploadTooLargeForBff(bytes: number): boolean {
   return bytes > BFF_SAFE_UPLOAD_BYTES;

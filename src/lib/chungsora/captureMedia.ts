@@ -21,11 +21,10 @@ export async function framesFromCaptures(captures: (File | null)[]): Promise<Fil
       throw new Error(`슬롯 ${i + 1} 촬영이 없습니다. 다시 촬영해 주세요.`);
     }
     const mime = cap.type ?? '';
-    if (mime.startsWith('image/')) {
-      out.push(cap);
-    } else {
-      out.push(await extractVideoFrame(cap));
+    if (!mime.startsWith('image/')) {
+      throw new Error(`슬롯 ${i + 1}은 사진(JPEG/PNG)만 업로드할 수 있어요.`);
     }
+    out.push(cap);
   }
   return out;
 }
