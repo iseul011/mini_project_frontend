@@ -46,6 +46,7 @@ export default function ParentSignupPage() {
         loginId: res.login_id,
         displayName: res.display_name,
         token: res.token,
+        onboardDone: res.onboard_done ?? false,
       });
       router.push('/parent/pair');
     } catch {

@@ -13,10 +13,12 @@ import { useStopCoachOnLeaveCapture } from '@/lib/chungsora/coachSpeechGuard';
 
 const FLOW_PREFIXES = [
   '/child/lock',
+  '/child/mission',
   '/child/dirty',
   '/child/after',
   '/child/unlock',
   '/child/pair',
+  '/child/pair/relink',
   '/child/quest/session',
 ];
 

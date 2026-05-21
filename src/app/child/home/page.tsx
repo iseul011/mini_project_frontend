@@ -3,17 +3,36 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CleaningCalendar } from '@/components/chungsora/CleaningCalendar';
+import { CoachAvatar } from '@/components/chungsora/CoachAvatar';
 import { WON_PER_P } from '@/lib/chungsora/tokens';
+import {
+  COACH_CHARACTERS,
+  resolveEffectiveCoachId,
+  type CoachCharacterId,
+} from '@/lib/chungsora/coachCharacters';
 import { fetchFamilySummary, fetchDailyQuests, type FamilySummary, type DailyQuest } from '@/lib/chungsora/clientApi';
+import { useCleaningSessionStore } from '@/lib/chungsora/cleaningSessionStore';
 
 export default function ChildHomePage() {
   const router = useRouter();
   const [summary, setSummary] = useState<FamilySummary | null>(null);
   const [quests, setQuests] = useState<DailyQuest[]>([]);
+  const [coachId, setCoachId] = useState<CoachCharacterId>('jiu');
+  const phase = useCleaningSessionStore((s) => s.phase);
+  const inMission = phase !== 'idle' && phase !== 'unlock';
 
   useEffect(() => {
     void fetchFamilySummary()
-      .then(setSummary)
+      .then((s) => {
+        setSummary(s);
+        setCoachId(
+          resolveEffectiveCoachId(
+            s.coach_character_id,
+            s.child_coach_character_id,
+            s.effective_coach_character_id,
+          ),
+        );
+      })
       .catch(() => undefined);
     void fetchDailyQuests()
       .then((r) => setQuests(r.quests))
@@ -39,8 +58,8 @@ export default function ChildHomePage() {
           <p className="text-sm font-medium text-[#2f3438]">
             {summary?.today_score ? '오늘 청소 완료' : '오늘 청소 대기'}
           </p>
-          <p className="mt-1 text-xs text-[#828c94]">
-            스트릭 {streak}일 · {mult}× 적용 {streak >= 5 ? '중' : ''}
+          <p className="mt-1 text-xs text-[#8e8e8e]">
+            연속 {streak}일 · 보상 {mult}×
           </p>
         </div>
 
@@ -57,13 +76,30 @@ export default function ChildHomePage() {
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={() => router.push('/child/lock')}
-          className="ch-btn-primary block py-4 text-center text-[15px]"
-        >
-          일일 퀘스트 시작하기
-        </button>
+        <div className="ch-card flex items-center gap-2 p-3">
+          <CoachAvatar characterId={coachId} size="sm" />
+          <p className="text-xs text-[#8e8e8e]">
+            오늘 안내 · <span className="font-semibold text-[#1a1e22]">{COACH_CHARACTERS[coachId].name}</span>
+          </p>
+        </div>
+
+        {inMission ? (
+          <button
+            type="button"
+            onClick={() => router.push('/child/mission/quest')}
+            className="ch-btn-primary block py-4 text-center text-[15px]"
+          >
+            미션 이어하기
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => router.push('/child/lock')}
+            className="ch-btn-primary block py-4 text-center text-[15px]"
+          >
+            오늘 방 청소 미션
+          </button>
+        )}
 
         <div className="border-t border-[#eaedef] pt-4">
           <h2 className="mb-3 text-sm font-bold text-[#2f3438]">청소 로그</h2>

@@ -47,7 +47,9 @@ class _MeTabState extends State<MeTab> {
         _balance = b;
         _streak = s.streakDays;
       });
-    } catch (_) {}
+    } catch (_) {
+      /* 401은 childAuthorizedRequest가 토큰 갱신 시도 — 연결 끊지 않음 */
+    }
   }
 
   @override
@@ -67,9 +69,14 @@ class _MeTabState extends State<MeTab> {
         _rowCard('이름', _name),
         _rowCard('앱 버전', '0.5.0'),
         const SizedBox(height: 8),
-        _actionTile('연결 관리', Icons.link, () async {
+        _actionTile('새 폰으로 다시 연결', Icons.phonelink_setup, () async {
           await Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => PairScreen(lockService: widget.lockService)),
+            MaterialPageRoute(
+              builder: (_) => PairScreen(
+                lockService: widget.lockService,
+                relinkMode: true,
+              ),
+            ),
           );
           await _load();
         }),

@@ -1,16 +1,37 @@
+# mini_frontend — Next.js 16 BFF (Vercel)
+
 node_modules/
 .next/
 .next2/
 out/
+
 .env
 .env.*
 .env.build
 !.env.example
 .env.local
+
 .vercel
 .pnpm-debug.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
 *.tsbuildinfo
+.eslintcache
 coverage/
 .turbo/
+
 .DS_Store
 Thumbs.db
+
+# Repo 내 Flutter APK 소스 (build-apk.yml)
+mini_flutter/.dart_tool/
+mini_flutter/.pub/
+mini_flutter/.pub-cache/
+mini_flutter/build/
+mini_flutter/.flutter-plugins
+mini_flutter/.flutter-plugins-dependencies
+mini_flutter/android/.gradle/
+mini_flutter/android/local.properties
+mini_flutter/android/**/build/

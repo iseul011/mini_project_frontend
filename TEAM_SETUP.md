@@ -79,7 +79,7 @@ pnpm lint
 | Route | 비고 |
 |-------|------|
 | `/api/v1/auth/login`, `signup`, `me` | 로그인·회원가입 |
-| `/api/v1/family/summary`, `pair/issue`, `pair/verify` | 가족 페어링 |
+| `/api/v1/family/summary` (GET·PATCH), `pair/issue`, `pair/verify`, `pair/status` | 가족·페어링 (자녀 쿠키 365일) |
 | `/api/v1/points` | 포인트 |
 | `/api/v1/lock/policy` | 잠금 정책 |
 | `/api/v1/praise-presets` | 칭찬 프리셋 |

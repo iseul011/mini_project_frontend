@@ -1,5 +1,5 @@
-import { CaptureCoachBody } from '@/components/chungsora/CaptureCoachBody';
+import { redirect } from 'next/navigation';
 
-export default function ChildDirtyPage() {
-  return <CaptureCoachBody mode="dirty" nextHref="/child/quest/session" />;
+export default function ChildDirtyRedirect() {
+  redirect('/child/mission/before');
 }

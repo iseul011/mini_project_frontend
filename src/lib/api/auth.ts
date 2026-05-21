@@ -6,6 +6,8 @@ export type AuthResponse = {
   id: number;
   login_id: string;
   display_name: string;
+  onboard_done?: boolean;
+  child_display_name?: string;
 };
 
 export type MeResponse = {

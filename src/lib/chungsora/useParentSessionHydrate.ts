@@ -9,15 +9,12 @@ import { useSettingsStore } from '@/lib/chungsora/settingsStore';
 export function useParentSessionHydrate() {
   const setParentSession = useAuthStore((s) => s.setParentSession);
   const setOnboardDone = useAuthStore((s) => s.setOnboardDone);
-  const parentLoggedIn = useAuthStore((s) => s.parentLoggedIn);
-  const parentToken = useAuthStore((s) => s.parentToken);
   const setLockTime = useSettingsStore((s) => s.setLockTime);
   const setLockDays = useSettingsStore((s) => s.setLockDays);
   const setPassScore = useSettingsStore((s) => s.setPassScore);
   const setBaseCleanWon = useSettingsStore((s) => s.setBaseCleanWon);
 
   useEffect(() => {
-    if (parentLoggedIn && parentToken) return;
     void fetchParentMe()
       .then((me) => {
         setParentSession({
@@ -34,8 +31,6 @@ export function useParentSessionHydrate() {
       })
       .catch(() => undefined);
   }, [
-    parentLoggedIn,
-    parentToken,
     setParentSession,
     setOnboardDone,
     setLockTime,

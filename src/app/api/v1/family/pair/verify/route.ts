@@ -3,7 +3,8 @@ import { CHILD_SESSION_COOKIE } from '@/lib/api/bffAuth';
 import { BFF_FAIL, readUpstreamJson } from '@/lib/api/bffProxyJson';
 import { upstreamUrl, UPSTREAM_MS } from '@/lib/api/bffUpstream';
 
-const MAX_AGE = 60 * 60 * 24 * 30;
+/** 자녀 device JWT(365일)와 맞춤 */
+const MAX_AGE = 60 * 60 * 24 * 365;
 
 export async function POST(req: NextRequest) {
   try {

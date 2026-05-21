@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
 import '../models/lock_policy.dart';
+import 'child_http.dart';
 import 'session_store.dart';
 
 class LockPolicyClient {
@@ -12,23 +13,16 @@ class LockPolicyClient {
   final http.Client _client;
 
   Future<LockPolicy> fetchPolicy() async {
-    final token = await SessionStore.getDeviceToken();
-    if (token == null || token.isEmpty) {
-      throw LockPolicyException('not_paired');
-    }
-
     final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.lockPolicyPath}');
-    final res = await _client.get(
-      uri,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Accept': 'application/json',
-      },
+    final res = await childAuthorizedRequest(
+      (token) => _client.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      ),
     );
-
-    if (res.statusCode == 401) {
-      throw LockPolicyException('unauthorized');
-    }
     if (res.statusCode != 200) {
       throw LockPolicyException('http_${res.statusCode}');
     }

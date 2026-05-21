@@ -1,5 +1,5 @@
-import { CaptureCoachBody } from '@/components/chungsora/CaptureCoachBody';
+import { redirect } from 'next/navigation';
 
-export default function ChildAfterPage() {
-  return <CaptureCoachBody mode="after" nextHref="/child/unlock" />;
+export default function ChildAfterRedirect() {
+  redirect('/child/mission/after');
 }

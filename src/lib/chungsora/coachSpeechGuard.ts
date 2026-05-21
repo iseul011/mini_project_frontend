@@ -9,6 +9,8 @@ export const CHUNGSORA_CAPTURE_PATHS = [
   '/parent/onboard/baseline',
   '/child/dirty',
   '/child/after',
+  '/child/mission/before',
+  '/child/mission/after',
 ] as const;
 
 export function isChungsoraCapturePath(pathname: string): boolean {

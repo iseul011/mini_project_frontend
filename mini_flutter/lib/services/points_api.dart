@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
 import 'api_exception.dart';
+import 'child_http.dart';
 import 'session_store.dart';
 
 class PointsApi {
@@ -23,7 +24,15 @@ class PointsApi {
 
   Future<int> fetchBalance() async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/points/balance');
-    final res = await _client.get(uri, headers: await _authHeaders());
+    final res = await childAuthorizedRequest(
+      (token) => _client.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      ),
+    );
     if (res.statusCode != 200) throw ApiException('http_${res.statusCode}');
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     return (body['balance'] as num?)?.toInt() ?? 0;
@@ -31,10 +40,17 @@ class PointsApi {
 
   Future<int> earnPoints(double amount, String label) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/points/earn');
-    final res = await _client.post(
-      uri,
-      headers: await _authHeaders(),
-      body: jsonEncode({'amount': amount.round(), 'label': label}),
+    final body = jsonEncode({'amount': amount.round(), 'label': label});
+    final res = await childAuthorizedRequest(
+      (token) => _client.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: body,
+      ),
     );
     if (res.statusCode != 200) throw ApiException('http_${res.statusCode}');
     final body = jsonDecode(res.body) as Map<String, dynamic>;
@@ -43,10 +59,17 @@ class PointsApi {
 
   Future<int> spendPoints(int won, String label) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/points/spend');
-    final res = await _client.post(
-      uri,
-      headers: await _authHeaders(),
-      body: jsonEncode({'won': won, 'label': label}),
+    final body = jsonEncode({'won': won, 'label': label});
+    final res = await childAuthorizedRequest(
+      (token) => _client.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: body,
+      ),
     );
     if (res.statusCode != 200) throw ApiException('http_${res.statusCode}');
     final body = jsonDecode(res.body) as Map<String, dynamic>;

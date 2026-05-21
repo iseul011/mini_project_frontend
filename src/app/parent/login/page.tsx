@@ -34,17 +34,19 @@ function ParentLoginInner() {
     setRole('parent');
     try {
       const res = await loginParent(loginId.trim(), password);
+      const resOnboardDone = res.onboard_done ?? false;
       setParentSession({
         loginId: res.login_id,
         displayName: res.display_name,
         token: res.token,
+        onboardDone: resOnboardDone,
       });
       const next = searchParams.get('next');
       const safeNext =
         next?.startsWith('/parent/') && !next.startsWith('/parent/login') && !next.startsWith('/parent/signup')
           ? next
           : null;
-      router.push(safeNext ?? (onboardDone ? '/parent/home' : '/parent/pair'));
+      router.push(safeNext ?? (resOnboardDone ? '/parent/home' : '/parent/pair'));
     } catch {
       setError('아이디 또는 비밀번호가 올바르지 않습니다.');
     } finally {

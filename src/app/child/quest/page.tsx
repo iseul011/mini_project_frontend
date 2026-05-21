@@ -27,12 +27,12 @@ export default function ChildQuestPage() {
         ))}
 
         {inSession ? (
-          <Link href="/child/quest/session" className="ch-btn-primary mt-2 block py-4 text-center text-sm">
-            세션 계속하기 →
+          <Link href="/child/mission/quest" className="ch-btn-primary mt-2 block py-4 text-center text-sm">
+            미션 이어하기 →
           </Link>
         ) : (
-          <p className="mt-2 rounded-xl bg-[#f0f2f4] px-4 py-3 text-xs text-[#828c94]">
-            홈에서 「일일 퀘스트 시작하기」로 촬영 · AI scan 후 세션 리스트가 생성돼요
+          <p className="mt-2 rounded-xl bg-[#f0f2f4] px-4 py-3 text-xs text-[#8e8e8e]">
+            홈에서 「오늘 방 청소 미션」으로 시작하면 청소 목록이 만들어져요
           </p>
         )}
       </div>

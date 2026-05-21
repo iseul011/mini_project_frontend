@@ -5,17 +5,24 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { MONTHLY_CASH_CAP, wonToP } from '@/lib/chungsora/tokens';
 import { useSettingsStore } from '@/lib/chungsora/settingsStore';
+import { CoachCharacterPicker } from '@/components/chungsora/CoachCharacterPicker';
 import {
   createDailyQuest,
   createShopReward,
   deleteDailyQuest,
   deleteShopReward,
   fetchDailyQuests,
+  fetchFamilySummary,
   fetchShopRewards,
+  updateFamilyProfile,
   updateShopReward,
   type DailyQuest,
   type ShopReward,
 } from '@/lib/chungsora/clientApi';
+import {
+  normalizeCoachCharacterId,
+  type CoachCharacterId,
+} from '@/lib/chungsora/coachCharacters';
 import { deferEffect } from '@/lib/react/deferEffect';
 
 const BASE_OPTIONS = [500, 1000, 1500, 2000, 2500];
@@ -35,17 +42,24 @@ function RewardsPageInner() {
   const [newWon, setNewWon] = useState(1000);
   const [questTitle, setQuestTitle] = useState('');
   const [showQuestForm, setShowQuestForm] = useState(searchParams.get('addQuest') === '1');
+  const [coachId, setCoachId] = useState<CoachCharacterId>('jiu');
 
   const load = useCallback(async () => {
     try {
-      const [shop, q] = await Promise.all([fetchShopRewards(), fetchDailyQuests()]);
+      const [shop, q, family] = await Promise.all([
+        fetchShopRewards(),
+        fetchDailyQuests(),
+        fetchFamilySummary(),
+      ]);
       setRewards(shop.rewards);
       setQuests(q.quests);
+      setCoachId(normalizeCoachCharacterId(family.coach_character_id));
+      if (family.base_clean_won) setBaseCleanWon(family.base_clean_won);
     } catch {
       setRewards([]);
       setQuests([]);
     }
-  }, []);
+  }, [setBaseCleanWon]);
 
   useEffect(() => {
     deferEffect(() => {
@@ -130,7 +144,7 @@ function RewardsPageInner() {
     <>
       <header className="px-5 pb-2 pt-4">
         <h1 className="text-[22px] font-bold text-[#2f3438]">보상 설정</h1>
-        <p className="mt-1 text-[13px] text-[#828c94]">P상점 · 청소 1회 기본 보상 · 일일 퀘스트</p>
+        <p className="mt-1 text-sm text-[#8e8e8e]">포인트 상점 · 기본 보상 · 안내 친구</p>
       </header>
 
       <div className="flex flex-col gap-4 px-5 pb-6">
@@ -186,7 +200,10 @@ function RewardsPageInner() {
               <button
                 key={won}
                 type="button"
-                onClick={() => setBaseCleanWon(won)}
+                onClick={() => {
+                  setBaseCleanWon(won);
+                  void updateFamilyProfile({ base_clean_won: won }).catch(() => undefined);
+                }}
                 className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
                   won === baseCleanWon
                     ? 'bg-[#e8f8fb] text-[#00b8cf] ring-1 ring-[#00b8cf]'
@@ -202,7 +219,17 @@ function RewardsPageInner() {
           </p>
         </div>
 
-        <p className="text-sm font-bold text-[#2f3438]">P상점 보상</p>
+        <div className="ch-card p-4">
+          <CoachCharacterPicker
+            value={coachId}
+            onChange={(id) => {
+              setCoachId(id);
+              void updateFamilyProfile({ coach_character_id: id }).catch(() => undefined);
+            }}
+          />
+        </div>
+
+        <p className="text-sm font-bold text-[#1a1e22]">포인트 상점</p>
         {rewards.map((r) => (
           <div key={r.id} className="ch-card p-4">
             {editId === r.id ? (

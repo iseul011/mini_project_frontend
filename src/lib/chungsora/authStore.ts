@@ -11,13 +11,18 @@ type AuthState = {
   parentDisplayName: string;
   parentToken: string;
   childToken: string;
+  childDeviceId: string;
   setParentSession: (payload: {
     loginId: string;
     displayName?: string;
     token: string;
     onboardDone?: boolean;
   }) => void;
-  setChildSession: (payload: { token: string }) => void;
+  setChildSession: (payload: {
+    token: string;
+    deviceId?: string;
+    parentId?: number;
+  }) => void;
   setChildPaired: (v: boolean) => void;
   setOnboardDone: (v: boolean) => void;
   logout: () => void;
@@ -34,16 +39,21 @@ export const useAuthStore = create<AuthState>()(
       parentDisplayName: '',
       parentToken: '',
       childToken: '',
+      childDeviceId: '',
       setParentSession: ({ loginId, displayName, token, onboardDone }) =>
         set((s) => ({
           parentLoggedIn: true,
           parentLoginId: loginId,
           parentDisplayName: displayName ?? loginId,
           parentToken: token,
-          onboardDone: onboardDone ?? s.onboardDone,
+          onboardDone: onboardDone !== undefined ? onboardDone : s.onboardDone,
         })),
-      setChildSession: ({ token }) =>
-        set({ childPaired: true, childToken: token }),
+      setChildSession: ({ token, deviceId }) =>
+        set({
+          childPaired: true,
+          childToken: token,
+          childDeviceId: deviceId ?? '',
+        }),
       setChildPaired: (v) => set({ childPaired: v }),
       setOnboardDone: (v) => set({ onboardDone: v }),
       logout: () =>
@@ -58,6 +68,7 @@ export const useAuthStore = create<AuthState>()(
         set({
           childPaired: false,
           childToken: '',
+          childDeviceId: '',
         }),
     }),
     { name: 'chungsora-auth-v2' },

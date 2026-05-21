@@ -58,6 +58,13 @@ class LockService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// JWT 만료 등으로 세션이 무효화된 뒤 UI·폴링 상태 정리
+  void forceUnpaired() {
+    _paired = false;
+    _policy = null;
+    notifyListeners();
+  }
+
   Future<LockDiagnostics> fetchDiagnostics() => LockBridge.getDiagnostics();
 
   Future<void> requestBatteryExemption() => LockBridge.requestBatteryExemption();
@@ -124,7 +131,16 @@ class LockService extends ChangeNotifier {
       await _refreshStatus();
     } on LockPolicyException catch (e) {
       _lastError = e.code;
-      if (e.code == 'not_paired') _paired = false;
+      if (e.code == 'not_paired') {
+        _paired = false;
+      } else if (e.code == 'unauthorized') {
+        final ok = await PairService().refreshDeviceToken();
+        if (ok) {
+          await _tick();
+          return;
+        }
+        _lastError = 'token_refresh_failed';
+      }
     } on PlatformException catch (e) {
       _lastError = e.message ?? e.code;
     } catch (e) {

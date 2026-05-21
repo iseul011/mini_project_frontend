@@ -4,9 +4,10 @@ import '../services/lock_service.dart';
 import '../services/session_store.dart';
 
 class PairScreen extends StatefulWidget {
-  const PairScreen({super.key, required this.lockService});
+  const PairScreen({super.key, required this.lockService, this.relinkMode = false});
 
   final LockService lockService;
+  final bool relinkMode;
 
   @override
   State<PairScreen> createState() => _PairScreenState();
@@ -59,15 +60,17 @@ class _PairScreenState extends State<PairScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('부모와 연결')),
+      appBar: AppBar(title: Text(widget.relinkMode ? '새 폰으로 연결' : '부모와 연결')),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              '부모 앱에서 발급한 페어링 코드를 입력하세요.',
-              style: TextStyle(color: Color(0xFF828C94), fontSize: 14),
+            Text(
+              widget.relinkMode
+                  ? '휴대폰을 바꾼 경우에만 사용하세요. 부모 앱에서 새 연결 코드를 받아 입력하면 됩니다. 기존 가족 연결은 그대로 유지돼요.'
+                  : '부모 앱에서 발급한 페어링 코드를 입력하세요.',
+              style: const TextStyle(color: Color(0xFF828C94), fontSize: 14),
             ),
             const SizedBox(height: 16),
             TextField(

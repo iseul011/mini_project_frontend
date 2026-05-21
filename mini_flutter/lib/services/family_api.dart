@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
 import 'api_exception.dart';
+import 'child_http.dart';
 import 'session_store.dart';
 
 class FamilySummary {
@@ -63,13 +64,12 @@ class FamilyApi {
   final http.Client _client;
 
   Future<FamilySummary> fetchSummary() async {
-    final token = await SessionStore.getDeviceToken();
-    if (token == null) throw ApiException('not_paired');
-
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/family/summary');
-    final res = await _client.get(
-      uri,
-      headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+    final res = await childAuthorizedRequest(
+      (token) => _client.get(
+        uri,
+        headers: {'Authorization': 'Bearer $token', 'Accept': 'application/json'},
+      ),
     );
     if (res.statusCode == 401) throw ApiException('unauthorized');
     if (res.statusCode != 200) throw ApiException('http_${res.statusCode}');

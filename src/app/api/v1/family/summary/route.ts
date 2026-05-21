@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const res = await fetch(upstreamUrl('/family/profile'), {
+    const res = await fetch(upstreamUrl('/family/summary'), {
       method: 'PATCH',
       headers: { ...upstreamAuthHeaders(req), 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

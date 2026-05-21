@@ -1,4 +1,4 @@
-/* build: dev-1779341453145 */
+/* build: dev-1779344640895 */
 /** 아이콘만 캐시. 앱 JS/HTML은 네트워크 우선 — 배포 시 사용자 캐시 삭제 불필요 */
 const CACHE = 'chungsora-static-v4';
 const PRECACHE = ['/manifest.json'];

@@ -15,6 +15,9 @@ export type FamilySummary = {
   baseline_url: string | null;
   baseline_urls: (string | null)[];
   baseline_verified: boolean;
+  coach_character_id?: string;
+  child_coach_character_id?: string | null;
+  effective_coach_character_id?: string;
 };
 
 export async function fetchFamilySummary() {

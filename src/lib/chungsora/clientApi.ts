@@ -59,8 +59,12 @@ export {
 export {
   issuePairCode,
   verifyPairCode,
+  refreshChildDeviceToken,
+  fetchPairCodeStatus,
   type PairIssueResponse,
   type PairVerifyResponse,
+  type PairRefreshResponse,
+  type PairStatusResponse,
 } from '@/lib/api/pair';
 
 export {

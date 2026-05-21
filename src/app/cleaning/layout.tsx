@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import { CleaningChildRedirect } from './CleaningChildRedirect'
 
 export const metadata: Metadata = {
   title: '청소 던전 — 나혼렙 시스템',
@@ -14,7 +15,7 @@ export default function CleaningLayout({ children }: { children: ReactNode }) {
         <div className="fixed inset-0 max-w-sm mx-auto pointer-events-none">
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-64 h-64 bg-[radial-gradient(ellipse,rgba(56,182,255,0.04)_0%,transparent_70%)]" />
         </div>
-        {children}
+        <CleaningChildRedirect>{children}</CleaningChildRedirect>
       </div>
     </div>
   )

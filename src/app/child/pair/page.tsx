@@ -37,7 +37,7 @@ function ChildPairInner() {
         return;
       }
       if (res.device_token) {
-        setChildSession({ token: res.device_token });
+        setChildSession({ token: res.device_token, deviceId: res.device_id });
       } else {
         useAuthStore.getState().setChildPaired(true);
       }

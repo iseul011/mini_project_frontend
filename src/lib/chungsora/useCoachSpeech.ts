@@ -12,6 +12,8 @@ export type CoachSpeakOptions = {
   force?: boolean;
   /** 자막만 갱신, TTS 생략 */
   silent?: boolean;
+  /** 안내 친구별 말속도 */
+  rate?: number;
 };
 
 function pickKoreanVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
@@ -33,10 +35,10 @@ export function stopCoachSpeech(): void {
   }
 }
 
-function utterance(text: string): SpeechSynthesisUtterance {
+function utterance(text: string, rate = DEFAULT_RATE): SpeechSynthesisUtterance {
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'ko-KR';
-  u.rate = DEFAULT_RATE;
+  u.rate = rate;
   u.pitch = DEFAULT_PITCH;
   const voice = pickKoreanVoice(window.speechSynthesis.getVoices());
   if (voice) u.voice = voice;
@@ -102,7 +104,7 @@ export function useCoachSpeech(enabled: boolean) {
     };
   }, [clearPendingSpeak]);
 
-  const runSpeak = useCallback((text: string) => {
+  const runSpeak = useCallback((text: string, rate = DEFAULT_RATE) => {
     if (!activeRef.current) return;
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
     stopCoachSpeech();
@@ -110,7 +112,7 @@ export function useCoachSpeech(enabled: boolean) {
     iosResumeRef.current = setTimeout(() => {
       iosResumeRef.current = null;
       if (!activeRef.current) return;
-      const u = utterance(text);
+      const u = utterance(text, rate);
       window.speechSynthesis.speak(u);
     }, IOS_RESUME_MS);
   }, []);
@@ -125,10 +127,11 @@ export function useCoachSpeech(enabled: boolean) {
       if (!enabledRef.current && !options?.force) return;
 
       clearPendingSpeak();
+      const rate = options?.rate ?? DEFAULT_RATE;
       delayRef.current = setTimeout(() => {
         delayRef.current = null;
         if (!activeRef.current) return;
-        runSpeak(trimmed);
+        runSpeak(trimmed, rate);
       }, SPEAK_DELAY_MS);
     },
     [runSpeak, clearPendingSpeak],

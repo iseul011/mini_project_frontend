@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Copy, Share2, RefreshCw, Check } from 'lucide-react';
-import { issuePairCode, type PairIssueResponse } from '@/lib/chungsora/clientApi';
+import { fetchPairCodeStatus, issuePairCode, type PairIssueResponse } from '@/lib/chungsora/clientApi';
 import { deferEffect } from '@/lib/react/deferEffect';
 
 export default function ParentPairCodePage() {
@@ -14,6 +14,8 @@ export default function ParentPairCodePage() {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [copied, setCopied] = useState<'code' | 'link' | null>(null);
   const [loading, setLoading] = useState(false);
+  const [codeUsed, setCodeUsed] = useState(false);
+  const [confirmError, setConfirmError] = useState('');
 
   useEffect(() => {
     deferEffect(() => {
@@ -26,9 +28,13 @@ export default function ParentPairCodePage() {
     setLoadError('');
     setLoading(true);
     try {
-      const res = await issuePairCode();
+      const nickname = sessionStorage.getItem('pair_child_nickname');
+      const res = await issuePairCode(nickname ?? undefined);
+      sessionStorage.setItem('pair_active_code', res.code);
       setPair(res);
       setSecondsLeft(res.ttl_seconds);
+      setCodeUsed(false);
+      setConfirmError('');
     } catch {
       setLoadError('코드를 불러오지 못했습니다. 다시 시도해 주세요.');
     } finally {
@@ -57,6 +63,36 @@ export default function ParentPairCodePage() {
       });
     }
   }, [secondsLeft, pair, load]);
+
+  useEffect(() => {
+    if (!pair?.code) return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const st = await fetchPairCodeStatus(pair.code);
+        if (cancelled) return;
+        if (st.code_used) setCodeUsed(true);
+      } catch {
+        /* ignore poll errors */
+      }
+    };
+    void poll();
+    const t = setInterval(() => void poll(), 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(t);
+    };
+  }, [pair?.code]);
+
+  const handleConfirmPaired = () => {
+    if (!pair?.code) return;
+    if (!codeUsed) {
+      setConfirmError('자녀 앱에서 코드 입력이 완료된 뒤에 눌러 주세요.');
+      return;
+    }
+    setConfirmError('');
+    router.push('/parent/pair/success');
+  };
 
   const fullLink = useMemo(() => {
     if (!pair || typeof window === 'undefined') return '';
@@ -176,10 +212,30 @@ export default function ParentPairCodePage() {
             </div>
           </div>
 
+          {codeUsed ? (
+            <div className="rounded-xl bg-[#d1fae5] px-4 py-3 text-[13px] font-medium text-[#065f46]">
+              자녀 앱 연결이 확인됐어요. 아래 버튼을 눌러 완료해 주세요.
+            </div>
+          ) : (
+            <p className="text-[12px] text-[#adb5bd]">
+              자녀 폰에서 코드 입력이 끝나면 이 버튼이 활성화돼요.
+            </p>
+          )}
+
+          {confirmError ? (
+            <p className="rounded-xl bg-[#fff0f0] px-4 py-3 text-[13px] font-medium text-[#e03131]">
+              {confirmError}
+            </p>
+          ) : null}
+
           {/* 완료 버튼 */}
           <div className="pt-2">
-            <button type="button" onClick={() => router.push('/parent/pair/success')}
-              className="ch-btn-primary w-full py-4 text-[16px] font-bold">
+            <button
+              type="button"
+              onClick={handleConfirmPaired}
+              disabled={!codeUsed}
+              className="ch-btn-primary w-full py-4 text-[16px] font-bold disabled:opacity-40"
+            >
               연결됐어요 ✓
             </button>
           </div>

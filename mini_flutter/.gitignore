@@ -18,7 +18,7 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# VS Code
+# VS Code (로컬만)
 .vscode/
 
 # Flutter/Dart/Pub related
@@ -42,5 +42,8 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Local SDK path (CI sets via flutter-action)
+# Android signing & SDK (CI는 flutter-action / env)
 local.properties
+**/android/key.properties
+*.jks
+*.keystore

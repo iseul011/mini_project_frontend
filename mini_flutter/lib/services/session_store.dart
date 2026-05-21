@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
+import 'api_exception.dart';
 
 class SessionStore {
   static const _tokenKey = 'device_token';
@@ -29,6 +30,11 @@ class SessionStore {
     await prefs.setString(_tokenKey, deviceToken);
     await prefs.setString(_deviceIdKey, deviceId);
     await prefs.setInt(_parentIdKey, parentId);
+  }
+
+  static Future<String?> getDeviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_deviceIdKey);
   }
 
   static Future<void> clear() async {
@@ -72,6 +78,36 @@ class PairService {
     );
 
     return PairResult.ok(deviceId: deviceId, parentId: parentId);
+  }
+
+  /// 등록된 기기 — DB 연결 유지, JWT만 재발급
+  Future<bool> refreshDeviceToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final deviceId = prefs.getString(SessionStore._deviceIdKey);
+    if (deviceId == null || deviceId.isEmpty) return false;
+
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/family/pair/refresh');
+    final res = await _client.post(
+      uri,
+      headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+      body: jsonEncode({'device_id': deviceId}),
+    );
+    if (res.statusCode != 200) return false;
+
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    if (body['ok'] != true) return false;
+
+    final token = body['device_token'] as String?;
+    if (token == null || token.isEmpty) return false;
+
+    final parentId = body['parent_account_id'] as int? ?? prefs.getInt(SessionStore._parentIdKey);
+    if (parentId == null) return false;
+    await SessionStore.savePairSession(
+      deviceToken: token,
+      deviceId: body['device_id'] as String? ?? deviceId,
+      parentId: parentId,
+    );
+    return true;
   }
 
   void close() => _client.close();

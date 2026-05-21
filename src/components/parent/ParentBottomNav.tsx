@@ -2,21 +2,28 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Home, ClipboardList, Handshake, Gift, Menu } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { BottomNavIcon } from '@/components/chungsora/BottomNavIcon';
 
 type TabId = 'home' | 'log' | 'propose' | 'rewards' | 'more';
 
-const LEFT: { id: TabId; label: string; href: string; icon: string }[] = [
-  { id: 'home', label: '홈', href: '/parent/home', icon: '🏠' },
-  { id: 'log', label: '로그', href: '/log', icon: '📋' },
+const LEFT: { id: TabId; label: string; href: string; Icon: LucideIcon; filledWhenActive?: boolean }[] = [
+  { id: 'home', label: '홈', href: '/parent/home', Icon: Home, filledWhenActive: true },
+  { id: 'log', label: '로그', href: '/log', Icon: ClipboardList },
 ];
 
-const RIGHT: { id: TabId; label: string; href: string; icon: string }[] = [
-  { id: 'rewards', label: '보상', href: '/parent/rewards', icon: '⭐' },
-  { id: 'more', label: '더보기', href: '/parent/more', icon: '☰' },
+const RIGHT: { id: TabId; label: string; href: string; Icon: LucideIcon; filledWhenActive?: boolean }[] = [
+  { id: 'rewards', label: '보상', href: '/parent/rewards', Icon: Gift },
+  { id: 'more', label: '더보기', href: '/parent/more', Icon: Menu },
 ];
 
 function tabActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function tabLabelClass(active: boolean) {
+  return `text-[10px] ${active ? 'font-semibold text-[#1a1e22]' : 'font-normal text-[#8e8e8e]'}`;
 }
 
 export function ParentBottomNav({ proposeBadge }: { proposeBadge?: number }) {
@@ -24,41 +31,45 @@ export function ParentBottomNav({ proposeBadge }: { proposeBadge?: number }) {
   const proposeOn = tabActive(pathname, '/propose') || tabActive(pathname, '/parent/propose');
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#eaedef] bg-white safe-bottom">
-      <div className="mx-auto flex max-w-lg items-end justify-around px-2 pt-1">
-        {LEFT.map(({ id, label, href, icon }) => {
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#dbdbdb] bg-white safe-bottom">
+      <div className="mx-auto flex max-w-lg items-end justify-around px-2 pt-1.5">
+        {LEFT.map(({ id, label, href, Icon, filledWhenActive }) => {
           const on = tabActive(pathname, href);
           return (
-            <Link key={id} href={href} className="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2">
-              <span className={`text-[20px] ${on ? 'opacity-100' : 'opacity-45'}`}>{icon}</span>
-              <span className={`text-[10px] ${on ? 'font-bold text-[#2f3438]' : 'font-medium text-[#adb5bd]'}`}>{label}</span>
+            <Link key={id} href={href} className="flex min-w-0 flex-1 flex-col items-center gap-1 py-2">
+              <BottomNavIcon icon={Icon} active={on} filledWhenActive={filledWhenActive} />
+              <span className={tabLabelClass(on)}>{label}</span>
             </Link>
           );
         })}
 
-        <Link href="/propose" className="relative -top-3 flex min-w-[56px] flex-col items-center gap-1">
-          <span className={`flex h-12 w-12 items-center justify-center rounded-full text-[22px] shadow-sm ${proposeOn ? 'bg-[#e8f8fb] ring-2 ring-[#00b8cf]' : 'bg-[#f0f2f4]'}`}>
-            🤝
+        <Link href="/propose" className="relative -top-2 flex min-w-[56px] flex-col items-center gap-1">
+          <span
+            className={[
+              'flex h-11 w-11 items-center justify-center rounded-full',
+              proposeOn ? 'bg-[#1a1e22] text-white' : 'bg-transparent text-[#8e8e8e]',
+            ].join(' ')}
+          >
+            <Handshake size={26} strokeWidth={proposeOn ? 2.25 : 1.75} aria-hidden />
           </span>
           {proposeBadge != null && proposeBadge > 0 && (
-            <span className="absolute -right-0.5 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#00b8cf] px-1 text-[9px] font-bold text-white">
+            <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ff3040] px-1 text-[9px] font-bold text-white">
               {proposeBadge}
             </span>
           )}
-          <span className={`text-[10px] ${proposeOn ? 'font-bold text-[#2f3438]' : 'font-medium text-[#adb5bd]'}`}>제안</span>
+          <span className={tabLabelClass(proposeOn)}>제안</span>
         </Link>
 
-        {RIGHT.map(({ id, label, href, icon }) => {
+        {RIGHT.map(({ id, label, href, Icon, filledWhenActive }) => {
           const on = tabActive(pathname, href);
           return (
-            <Link key={id} href={href} className="flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2">
-              <span className={`text-[18px] ${on ? 'opacity-100' : 'opacity-45'}`}>{icon}</span>
-              <span className={`text-[10px] ${on ? 'font-bold text-[#2f3438]' : 'font-medium text-[#adb5bd]'}`}>{label}</span>
+            <Link key={id} href={href} className="flex min-w-0 flex-1 flex-col items-center gap-1 py-2">
+              <BottomNavIcon icon={Icon} active={on} filledWhenActive={filledWhenActive} />
+              <span className={tabLabelClass(on)}>{label}</span>
             </Link>
           );
         })}
       </div>
-      <div className="mx-auto mb-1 mt-0.5 h-1 w-28 rounded-full bg-[#eaedef]/80" />
     </nav>
   );
 }
